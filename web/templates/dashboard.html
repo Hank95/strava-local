@@ -144,16 +144,15 @@ const data = typeData.map(d => d.count);
 const typeChartConfig = ChartConfig.doughnut(labels, data);
 new Chart(document.getElementById('type-chart'), typeChartConfig);
 
-// Activities over time - with period switching
-const timeData = {{ time_data | tojson }};
+// Activities over time chart
 let timeChart = null;
 
-function createTimeChart() {
+function createTimeChart(chartData) {
     const config = ChartConfig.bar(
-        timeData.map(d => d.period),
+        chartData.map(d => d.period),
         [{
             label: 'Activities',
-            data: timeData.map(d => d.count),
+            data: chartData.map(d => d.count),
             backgroundColor: ChartConfig.colors.primary,
         }],
         {
@@ -174,14 +173,25 @@ function createTimeChart() {
     timeChart = new Chart(document.getElementById('time-chart'), config);
 }
 
-createTimeChart();
+// Initial chart with month data
+createTimeChart({{ time_data | tojson }});
 
-// Period selector (visual only for now - would need backend API for real data)
-document.querySelectorAll('.period-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+// Period selector - fetch data for selected grouping
+document.querySelectorAll('#period-selector .period-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        // Update active state
+        document.querySelectorAll('#period-selector .period-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        // Future: fetch data for selected period via HTMX or fetch()
+
+        // Fetch data for selected period
+        const period = this.dataset.period;
+        try {
+            const response = await fetch(`/api/stats/chart?grouping=${period}`);
+            const data = await response.json();
+            createTimeChart(data);
+        } catch (error) {
+            console.error('Failed to load chart data:', error);
+        }
     });
 });
 </script>
