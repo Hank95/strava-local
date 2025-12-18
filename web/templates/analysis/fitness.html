@@ -108,7 +108,7 @@
                     <tr>
                         <td><span class="text-muted">{{ week.week }}</span></td>
                         <td>{{ week.activities }}</td>
-                        <td><strong>{{ week.distance_km }}</strong> <span class="text-muted">km</span></td>
+                        <td><strong>{{ "{:.1f}".format(week.distance_km / 1.609) }}</strong> <span class="text-muted">mi</span></td>
                         <td>{{ week.time_hours }} <span class="text-muted">hr</span></td>
                         <td><strong>{{ week.tss|int }}</strong></td>
                     </tr>

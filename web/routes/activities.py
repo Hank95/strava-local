@@ -90,7 +90,7 @@ async def activity_detail(
     db: Session = Depends(get_db),
 ):
     """Render a single activity detail page."""
-    from db.models import Activity, Stream, FitFile
+    from db.models import Activity, Stream, FitFile, ActivityMetrics
 
     activity = db.query(Activity).filter_by(activity_id=activity_id).first()
     if not activity:
@@ -99,6 +99,7 @@ async def activity_detail(
 
     stream = db.query(Stream).filter_by(activity_id=activity_id).first()
     fit_file = db.query(FitFile).filter_by(activity_id=activity_id).first()
+    metrics = db.query(ActivityMetrics).filter_by(activity_id=activity_id).first()
 
     return templates.TemplateResponse(
         "activities/detail.html",
@@ -107,6 +108,7 @@ async def activity_detail(
             "activity": activity,
             "stream": stream,
             "fit_file": fit_file,
+            "metrics": metrics,
         },
     )
 

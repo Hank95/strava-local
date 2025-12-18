@@ -2,18 +2,53 @@
 <tbody id="activity-rows">
     {% for activity in activities %}
     <tr>
-        <td>{{ activity.start_time.strftime('%Y-%m-%d') if activity.start_time else '-' }}</td>
-        <td><a href="/activities/{{ activity.activity_id }}">{{ activity.name or 'Unnamed' }}</a></td>
-        <td>{{ activity.activity_type or '-' }}</td>
-        <td>{{ "{:.2f}".format(activity.distance / 1000) if activity.distance else '-' }} km</td>
+        <td>
+            <span class="text-muted">
+                {{ activity.start_time.strftime('%b %d') if activity.start_time else '-' }}
+            </span>
+        </td>
+        <td>
+            <a href="/activities/{{ activity.activity_id }}" class="activity-link">
+                {{ activity.name or 'Unnamed Activity' }}
+            </a>
+        </td>
+        <td>
+            <span class="activity-badge activity-badge--{{ (activity.activity_type or 'other')|lower|replace(' ', '') }}">
+                {{ activity.activity_type or 'Other' }}
+            </span>
+        </td>
+        <td>
+            {% if activity.distance %}
+            <strong>{{ "{:.1f}".format(activity.distance / 1609.34) }}</strong>
+            <span class="text-muted text-xs">mi</span>
+            {% else %}<span class="text-muted">–</span>{% endif %}
+        </td>
         <td>
             {% if activity.moving_time %}
-            {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format(((activity.moving_time % 3600) // 60)|int) }}:{{ "%02d"|format((activity.moving_time % 60)|int) }}
-            {% else %}-{% endif %}
+            {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format((activity.moving_time % 3600) // 60) }}
+            {% else %}<span class="text-muted">–</span>{% endif %}
         </td>
-        <td>{{ "{:.1f}".format(activity.avg_speed * 3.6) if activity.avg_speed else '-' }} km/h</td>
-        <td>{{ "{:.0f}".format(activity.avg_hr) if activity.avg_hr else '-' }} bpm</td>
-        <td>{{ "{:.0f}".format(activity.elevation_gain) if activity.elevation_gain else '-' }} m</td>
+        <td>
+            {% if activity.activity_type and activity.activity_type.lower() == 'run' and activity.distance and activity.moving_time %}
+            {% set tbl_pace_sec = activity.moving_time / (activity.distance / 1609.34) %}
+            {{ (tbl_pace_sec // 60)|int }}:{{ "%02d"|format((tbl_pace_sec % 60)|int) }}
+            <span class="text-muted text-xs">/mi</span>
+            {% elif activity.avg_speed %}
+            {{ "{:.1f}".format(activity.avg_speed * 2.237) }}
+            <span class="text-muted text-xs">mph</span>
+            {% else %}<span class="text-muted">–</span>{% endif %}
+        </td>
+        <td>
+            {% if activity.avg_hr %}
+            {{ "{:.0f}".format(activity.avg_hr) }}
+            {% else %}<span class="text-muted">–</span>{% endif %}
+        </td>
+        <td>
+            {% if activity.elevation_gain %}
+            {{ "{:.0f}".format(activity.elevation_gain * 3.281) }}
+            <span class="text-muted text-xs">ft</span>
+            {% else %}<span class="text-muted">–</span>{% endif %}
+        </td>
     </tr>
     {% endfor %}
 </tbody>
@@ -22,7 +57,7 @@
 <tfoot>
     <tr>
         <td colspan="8">
-            <small>Page {{ page }} of {{ total_pages }} ({{ total }} total activities)</small>
+            <small class="text-muted">Page {{ page }} of {{ total_pages }} ({{ total }} total activities)</small>
         </td>
     </tr>
 </tfoot>

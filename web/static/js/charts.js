@@ -360,7 +360,7 @@ const ChartConfig = {
             ...this.defaults.plugins.tooltip,
             callbacks: {
               title: (ctx) => `Distance: ${ctx[0].label}`,
-              label: (ctx) => `Elevation: ${ctx.raw} m`,
+              label: (ctx) => `Elevation: ${Math.round(ctx.raw * 3.281)} ft`,
             },
           },
         },

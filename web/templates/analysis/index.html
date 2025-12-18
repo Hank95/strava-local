@@ -18,7 +18,7 @@
         </div>
         <div class="record-card__content">
             <div class="record-card__label">Longest Distance</div>
-            <div class="record-card__value">{{ "{:.1f}".format(records.longest_distance.distance / 1000) }} km</div>
+            <div class="record-card__value">{{ "{:.1f}".format(records.longest_distance.distance / 1609.34) }} mi</div>
             <a href="/activities/{{ records.longest_distance.activity_id }}" class="record-card__link">
                 {{ records.longest_distance.name or 'Unnamed' }}
             </a>
@@ -54,7 +54,7 @@
         </div>
         <div class="record-card__content">
             <div class="record-card__label">Most Elevation</div>
-            <div class="record-card__value">{{ "{:,.0f}".format(records.highest_climb.elevation_gain) }} m</div>
+            <div class="record-card__value">{{ "{:,.0f}".format(records.highest_climb.elevation_gain * 3.281) }} ft</div>
             <a href="/activities/{{ records.highest_climb.activity_id }}" class="record-card__link">
                 {{ records.highest_climb.name or 'Unnamed' }}
             </a>
@@ -72,7 +72,7 @@
         </div>
         <div class="record-card__content">
             <div class="record-card__label">Fastest Speed</div>
-            <div class="record-card__value">{{ "{:.1f}".format(records.fastest_speed.max_speed * 3.6) }} km/h</div>
+            <div class="record-card__value">{{ "{:.1f}".format(records.fastest_speed.max_speed * 2.237) }} mph</div>
             <a href="/activities/{{ records.fastest_speed.activity_id }}" class="record-card__link">
                 {{ records.fastest_speed.name or 'Unnamed' }}
             </a>

@@ -1255,6 +1255,45 @@ nav.container-fluid a[aria-current="page"] {
   text-align: center;
 }
 
+/* Zone Legend (for activity detail) */
+.zone-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.zone-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+}
+
+.zone-legend__label {
+  color: var(--color-text-muted);
+}
+
+.zone-legend__value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.zone-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.zone-dot--z1 { background: #64B5F6; }
+.zone-dot--z2 { background: #81C784; }
+.zone-dot--z3 { background: #FFD54F; }
+.zone-dot--z4 { background: #FF8A65; }
+.zone-dot--z5 { background: #E57373; }
+
 /* Alert */
 .alert {
   padding: var(--space-md);

@@ -26,10 +26,10 @@
     <div class="stat-card animate-slide-up">
         <div class="stat-card__header">Total Distance</div>
         <div class="stat-card__value">
-            {{ "{:,.0f}".format(stats.total_distance_km) }}
-            <span class="stat-card__unit">km</span>
+            {{ "{:,.0f}".format(stats.total_distance_km / 1.609) }}
+            <span class="stat-card__unit">mi</span>
         </div>
-        <div class="stat-card__footer">{{ "{:,.0f}".format(stats.total_distance_km / 1.609) }} miles</div>
+        <div class="stat-card__footer">{{ "{:,.0f}".format(stats.total_distance_km) }} km</div>
     </div>
 
     <div class="stat-card animate-slide-up">
@@ -94,6 +94,7 @@
                     <th>Type</th>
                     <th>Distance</th>
                     <th>Time</th>
+                    <th>Pace/Speed</th>
                 </tr>
             </thead>
             <tbody>
@@ -116,13 +117,23 @@
                     </td>
                     <td>
                         {% if activity.distance %}
-                        <strong>{{ "{:.1f}".format(activity.distance / 1000) }}</strong>
-                        <span class="text-muted">km</span>
+                        <strong>{{ "{:.1f}".format(activity.distance / 1609.34) }}</strong>
+                        <span class="text-muted">mi</span>
                         {% else %}-{% endif %}
                     </td>
                     <td>
                         {% if activity.moving_time %}
                         {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format((activity.moving_time % 3600) // 60) }}
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.activity_type and activity.activity_type.lower() == 'run' and activity.distance and activity.moving_time %}
+                        {% set dash_pace = activity.moving_time / (activity.distance / 1609.34) %}
+                        {{ (dash_pace // 60)|int }}:{{ "%02d"|format((dash_pace % 60)|int) }}
+                        <span class="text-muted">/mi</span>
+                        {% elif activity.avg_speed %}
+                        {{ "{:.1f}".format(activity.avg_speed * 2.237) }}
+                        <span class="text-muted">mph</span>
                         {% else %}-{% endif %}
                     </td>
                 </tr>
