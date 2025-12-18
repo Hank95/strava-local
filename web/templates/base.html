@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Strava Local{% endblock %}</title>
+
+    <!-- Pico CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="container-fluid">
+        <ul>
+            <li><strong>Strava Local</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Dashboard</a></li>
+            <li><a href="/activities" {% if request.url.path.startswith("/activities") %}aria-current="page"{% endif %}>Activities</a></li>
+            <li><a href="/maps" {% if request.url.path.startswith("/maps") %}aria-current="page"{% endif %}>Maps</a></li>
+            <li><a href="/analysis" {% if request.url.path.startswith("/analysis") %}aria-current="page"{% endif %}>Analysis</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <small>Strava Local - Your data stays local</small>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

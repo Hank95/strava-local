@@ -1,0 +1,28 @@
+<!-- Activity table rows partial for HTMX -->
+<tbody id="activity-rows">
+    {% for activity in activities %}
+    <tr>
+        <td>{{ activity.start_time.strftime('%Y-%m-%d') if activity.start_time else '-' }}</td>
+        <td><a href="/activities/{{ activity.activity_id }}">{{ activity.name or 'Unnamed' }}</a></td>
+        <td>{{ activity.activity_type or '-' }}</td>
+        <td>{{ "{:.2f}".format(activity.distance / 1000) if activity.distance else '-' }} km</td>
+        <td>
+            {% if activity.moving_time %}
+            {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format(((activity.moving_time % 3600) // 60)|int) }}:{{ "%02d"|format((activity.moving_time % 60)|int) }}
+            {% else %}-{% endif %}
+        </td>
+        <td>{{ "{:.1f}".format(activity.avg_speed * 3.6) if activity.avg_speed else '-' }} km/h</td>
+        <td>{{ "{:.0f}".format(activity.avg_hr) if activity.avg_hr else '-' }} bpm</td>
+        <td>{{ "{:.0f}".format(activity.elevation_gain) if activity.elevation_gain else '-' }} m</td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+<!-- Pagination info -->
+<tfoot>
+    <tr>
+        <td colspan="8">
+            <small>Page {{ page }} of {{ total_pages }} ({{ total }} total activities)</small>
+        </td>
+    </tr>
+</tfoot>

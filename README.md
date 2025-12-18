@@ -12,7 +12,7 @@ A local ingestion and analysis tool for Strava activity data. Ingest your Strava
 4. Click "Request Your Archive"
 5. Wait for email (can take a few hours)
 6. Download and extract the ZIP file
-7. You'll have `activities.csv` and an `activities/` folder with FIT/GPX files
+7. You'll have `activities.csv` and an `activities/` folder with FIT and GPX files
 
 ## Requirements
 
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ```
 strava-local/
-├── activities/          # Your Strava FIT files (from export)
+├── activities/          # Your Strava FIT/GPX files (from export)
 ├── activities.csv       # Your Strava activities CSV (from export)
 ├── data/                # SQLite database location
 │   └── strava_local.db
@@ -43,12 +43,20 @@ strava-local/
 ├── ingest/              # Ingestion logic
 │   ├── csv_loader.py    # CSV parsing
 │   ├── fit_parser.py    # FIT file parsing
+│   ├── gpx_parser.py    # GPX file parsing
 │   └── ingest.py        # Main ingestion orchestration
 ├── scripts/             # CLI entry points
 │   ├── ingest.py        # Run ingestion
 │   ├── stats.py         # View statistics
 │   ├── latest.py        # View latest activity
-│   └── map.py           # Generate map visualizations
+│   ├── map.py           # Generate map visualizations
+│   └── serve.py         # Start web server
+├── web/                 # Web application
+│   ├── app.py           # FastAPI application
+│   ├── routes/          # Route handlers
+│   ├── services/        # Business logic
+│   ├── templates/       # Jinja2 HTML templates
+│   └── static/          # CSS and JS files
 ├── requirements.txt
 └── README.md
 ```
@@ -129,6 +137,24 @@ Maps are saved to `data/map.html` by default. Open the HTML file in a browser to
 - `--routes`: Shows all routes overlaid, colored by activity type
 - `--activity ID`: Shows a single activity with start/end markers
 
+### Web Interface
+
+Start the web server to explore your data in a browser:
+
+```bash
+python -m scripts.serve
+```
+
+Then open http://127.0.0.1:8000 in your browser.
+
+**Features:**
+- **Dashboard**: Summary statistics, activity charts, recent activities
+- **Activity Browser**: Searchable, filterable table of all activities with detail pages
+- **Maps**: Interactive heatmap and routes explorer with filters
+- **Analysis**: Personal records, heart rate statistics
+
+The web interface provides the same functionality as the CLI tools but with an interactive UI.
+
 ## Database Schema
 
 ### activities
@@ -198,6 +224,6 @@ sqlite3 data/strava_local.db "SELECT activity_type, COUNT(*), SUM(distance)/1000
 
 ## Notes
 
-- FIT files are matched to CSV activities by activity ID (from filename) or by start time (within 10 minutes)
+- FIT and GPX files are matched to CSV activities by activity ID (from filename) or by start time (within 10 minutes)
+- FIT files are preferred over GPX when both exist for the same activity
 - GPS routes are downsampled to max 500 points to reduce storage
-- GPX files are currently not parsed (only FIT files)

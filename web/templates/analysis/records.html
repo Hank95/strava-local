@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Records by Type - Strava Local{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="/analysis">Analysis</a></li>
+        <li>Records by Type</li>
+    </ul>
+</nav>
+
+<h1>Personal Records by Activity Type</h1>
+
+{% for activity_type, records in records_by_type.items() %}
+<article>
+    <header><h2>{{ activity_type }}</h2></header>
+
+    <div class="grid">
+        {% if records.longest_distance %}
+        <div>
+            <strong>Longest Distance</strong>
+            <p>
+                {{ "{:.1f}".format(records.longest_distance.distance / 1000) }} km
+                <br>
+                <small>
+                    <a href="/activities/{{ records.longest_distance.activity_id }}">
+                        {{ records.longest_distance.name or 'Unnamed' }}
+                    </a>
+                    - {{ records.longest_distance.start_time.strftime('%Y-%m-%d') if records.longest_distance.start_time else '' }}
+                </small>
+            </p>
+        </div>
+        {% endif %}
+
+        {% if records.fastest_avg_speed %}
+        <div>
+            <strong>Fastest Average</strong>
+            <p>
+                {{ "{:.1f}".format(records.fastest_avg_speed.avg_speed * 3.6) }} km/h
+                <br>
+                <small>
+                    <a href="/activities/{{ records.fastest_avg_speed.activity_id }}">
+                        {{ records.fastest_avg_speed.name or 'Unnamed' }}
+                    </a>
+                    - {{ records.fastest_avg_speed.start_time.strftime('%Y-%m-%d') if records.fastest_avg_speed.start_time else '' }}
+                </small>
+            </p>
+        </div>
+        {% endif %}
+
+        {% if records.highest_climb %}
+        <div>
+            <strong>Most Elevation</strong>
+            <p>
+                {{ "{:,.0f}".format(records.highest_climb.elevation_gain) }} m
+                <br>
+                <small>
+                    <a href="/activities/{{ records.highest_climb.activity_id }}">
+                        {{ records.highest_climb.name or 'Unnamed' }}
+                    </a>
+                    - {{ records.highest_climb.start_time.strftime('%Y-%m-%d') if records.highest_climb.start_time else '' }}
+                </small>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</article>
+{% endfor %}
+{% endblock %}

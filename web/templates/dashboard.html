@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Strava Local{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<!-- Summary Cards -->
+<div class="grid">
+    <article>
+        <header>Total Activities</header>
+        <h2>{{ "{:,}".format(stats.total_activities) }}</h2>
+        <footer>
+            {% if stats.first_activity and stats.last_activity %}
+            {{ stats.first_activity.strftime('%b %Y') }} - {{ stats.last_activity.strftime('%b %Y') }}
+            {% endif %}
+        </footer>
+    </article>
+    <article>
+        <header>Total Distance</header>
+        <h2>{{ "{:,.0f}".format(stats.total_distance_km) }} km</h2>
+        <footer>{{ "{:,.0f}".format(stats.total_distance_km / 1.609) }} miles</footer>
+    </article>
+    <article>
+        <header>Total Time</header>
+        <h2>{{ "{:,.0f}".format(stats.total_time_hours) }} hrs</h2>
+        <footer>{{ "{:,.1f}".format(stats.total_time_hours / 24) }} days</footer>
+    </article>
+    <article>
+        <header>GPS Tracks</header>
+        <h2>{{ stats.activities_with_gps }}</h2>
+        <footer>{{ stats.gps_percentage }}% of activities</footer>
+    </article>
+</div>
+
+<!-- Charts Row -->
+<div class="grid">
+    <article>
+        <header>Activities by Type</header>
+        <canvas id="type-chart" style="max-height: 300px;"></canvas>
+    </article>
+    <article>
+        <header>Activities Over Time</header>
+        <canvas id="time-chart" style="max-height: 300px;"></canvas>
+    </article>
+</div>
+
+<!-- Recent Activities -->
+<article>
+    <header>Recent Activities</header>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Distance</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in recent_activities %}
+            <tr>
+                <td>{{ activity.start_time.strftime('%Y-%m-%d') if activity.start_time else '-' }}</td>
+                <td><a href="/activities/{{ activity.activity_id }}">{{ activity.name or 'Unnamed' }}</a></td>
+                <td>{{ activity.activity_type or '-' }}</td>
+                <td>{{ "{:.1f}".format(activity.distance / 1000) if activity.distance else '-' }} km</td>
+                <td>
+                    {% if activity.moving_time %}
+                    {{ (activity.moving_time // 60)|int }}:{{ "%02d"|format((activity.moving_time % 60)|int) }}
+                    {% else %}-{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <footer>
+        <a href="/activities">View all activities</a>
+    </footer>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Activity type pie chart
+const typeData = {{ type_breakdown | tojson }};
+new Chart(document.getElementById('type-chart'), {
+    type: 'doughnut',
+    data: {
+        labels: typeData.map(d => d.type),
+        datasets: [{
+            data: typeData.map(d => d.count),
+            backgroundColor: [
+                '#FF5722', '#2196F3', '#4CAF50', '#8BC34A', '#00BCD4',
+                '#9C27B0', '#FFEB3B', '#F44336', '#795548', '#607D8B'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'right',
+            }
+        }
+    }
+});
+
+// Activities over time bar chart
+const timeData = {{ time_data | tojson }};
+new Chart(document.getElementById('time-chart'), {
+    type: 'bar',
+    data: {
+        labels: timeData.map(d => d.period),
+        datasets: [{
+            label: 'Activities',
+            data: timeData.map(d => d.count),
+            backgroundColor: '#2196F3'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    maxTicksLimit: 12
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

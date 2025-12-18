@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis - Strava Local{% endblock %}
+
+{% block content %}
+<h1>Performance Analysis</h1>
+
+<!-- Personal Records -->
+<h2>Personal Records</h2>
+<div class="grid">
+    {% if records.longest_distance %}
+    <article>
+        <header>Longest Distance</header>
+        <h3>{{ "{:.1f}".format(records.longest_distance.distance / 1000) }} km</h3>
+        <p>
+            <a href="/activities/{{ records.longest_distance.activity_id }}">
+                {{ records.longest_distance.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.longest_distance.start_time.strftime('%B %d, %Y') if records.longest_distance.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+
+    {% if records.longest_time %}
+    <article>
+        <header>Longest Duration</header>
+        <h3>{{ (records.longest_time.moving_time // 3600)|int }}:{{ "%02d"|format(((records.longest_time.moving_time % 3600) // 60)|int) }}</h3>
+        <p>
+            <a href="/activities/{{ records.longest_time.activity_id }}">
+                {{ records.longest_time.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.longest_time.start_time.strftime('%B %d, %Y') if records.longest_time.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+
+    {% if records.highest_climb %}
+    <article>
+        <header>Most Elevation</header>
+        <h3>{{ "{:,.0f}".format(records.highest_climb.elevation_gain) }} m</h3>
+        <p>
+            <a href="/activities/{{ records.highest_climb.activity_id }}">
+                {{ records.highest_climb.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.highest_climb.start_time.strftime('%B %d, %Y') if records.highest_climb.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+
+    {% if records.fastest_speed %}
+    <article>
+        <header>Fastest Speed</header>
+        <h3>{{ "{:.1f}".format(records.fastest_speed.max_speed * 3.6) }} km/h</h3>
+        <p>
+            <a href="/activities/{{ records.fastest_speed.activity_id }}">
+                {{ records.fastest_speed.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.fastest_speed.start_time.strftime('%B %d, %Y') if records.fastest_speed.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+
+    {% if records.highest_hr %}
+    <article>
+        <header>Max Heart Rate</header>
+        <h3>{{ "{:.0f}".format(records.highest_hr.max_hr) }} bpm</h3>
+        <p>
+            <a href="/activities/{{ records.highest_hr.activity_id }}">
+                {{ records.highest_hr.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.highest_hr.start_time.strftime('%B %d, %Y') if records.highest_hr.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+
+    {% if records.most_calories %}
+    <article>
+        <header>Most Calories</header>
+        <h3>{{ "{:,.0f}".format(records.most_calories.calories) }}</h3>
+        <p>
+            <a href="/activities/{{ records.most_calories.activity_id }}">
+                {{ records.most_calories.name or 'Unnamed' }}
+            </a>
+            <br>
+            <small>{{ records.most_calories.start_time.strftime('%B %d, %Y') if records.most_calories.start_time else '' }}</small>
+        </p>
+    </article>
+    {% endif %}
+</div>
+
+<!-- Heart Rate Stats -->
+{% if hr_stats.has_data %}
+<h2>Heart Rate Statistics</h2>
+<div class="grid">
+    <article>
+        <header>Activities with HR Data</header>
+        <h3>{{ hr_stats.activities_with_hr }}</h3>
+    </article>
+    <article>
+        <header>Average Heart Rate</header>
+        <h3>{{ hr_stats.average_hr }} bpm</h3>
+    </article>
+    <article>
+        <header>Max HR Ever Recorded</header>
+        <h3>{{ hr_stats.max_hr_ever|int }} bpm</h3>
+    </article>
+</div>
+{% endif %}
+
+<!-- Link to detailed records -->
+<p><a href="/analysis/records">View records by activity type</a></p>
+{% endblock %}
