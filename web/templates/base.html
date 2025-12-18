@@ -28,7 +28,9 @@
             <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Dashboard</a></li>
             <li><a href="/activities" {% if request.url.path.startswith("/activities") %}aria-current="page"{% endif %}>Activities</a></li>
             <li><a href="/maps" {% if request.url.path.startswith("/maps") %}aria-current="page"{% endif %}>Maps</a></li>
+            <li><a href="/fitness" {% if request.url.path.startswith("/fitness") %}aria-current="page"{% endif %}>Fitness</a></li>
             <li><a href="/analysis" {% if request.url.path.startswith("/analysis") %}aria-current="page"{% endif %}>Analysis</a></li>
+            <li><a href="/settings" {% if request.url.path.startswith("/settings") %}aria-current="page"{% endif %}>Settings</a></li>
         </ul>
     </nav>
 

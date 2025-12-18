@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Fitness - Strava Local{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .form-status-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+    .form-status-card.success { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
+    .form-status-card.warning { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); }
+    .form-status-card.error { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); }
+    .form-status-card.secondary { background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%); }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .metric-box {
+        text-align: center;
+        padding: 1rem;
+        background: var(--card-background-color);
+        border-radius: 8px;
+    }
+
+    .metric-box .value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .metric-box .label {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+        margin-top: 0.25rem;
+    }
+
+    .metric-box.ctl .value { color: #2196F3; }
+    .metric-box.atl .value { color: #FF9800; }
+    .metric-box.tsb .value { color: #4CAF50; }
+    .metric-box.tsb.negative .value { color: #f44336; }
+
+    .chart-container {
+        position: relative;
+        height: 350px;
+        margin: 1.5rem 0;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-stat {
+        text-align: center;
+        padding: 0.75rem;
+        background: var(--card-background-color);
+        border-radius: 8px;
+    }
+
+    .summary-stat .value {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .summary-stat .label {
+        font-size: 0.75rem;
+        color: var(--muted-color);
+    }
+
+    .weekly-table {
+        font-size: 0.9rem;
+    }
+
+    .weekly-table th {
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .weekly-table td {
+        padding: 0.5rem;
+    }
+
+    .tss-badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .tss-badge.hr { background: #e3f2fd; color: #1565c0; }
+    .tss-badge.duration { background: #fce4ec; color: #c2185b; }
+
+    .streak-display {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        padding: 1rem;
+        background: var(--card-background-color);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .streak-item {
+        text-align: center;
+    }
+
+    .streak-item .value {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+
+    .streak-item .label {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+    }
+
+    .no-data-message {
+        text-align: center;
+        padding: 3rem;
+        color: var(--muted-color);
+    }
+
+    .profile-info {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: var(--card-background-color);
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Fitness</h1>
+
+{% if form_status.ctl is none %}
+<div class="no-data-message">
+    <h3>No Metrics Data</h3>
+    <p>Run the metrics computation to see your training load analysis.</p>
+    <pre>python -m scripts.compute_metrics</pre>
+    <p style="margin-top: 1rem;">
+        <a href="/settings" role="button">Configure Settings</a>
+    </p>
+</div>
+{% else %}
+
+<!-- Current Form Status -->
+<div class="form-status-card {{ form_status.status_class }}">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 style="margin: 0;">{{ form_status.status }}</h3>
+            <p style="margin: 0.25rem 0 0 0; opacity: 0.8;">{{ form_status.description }}</p>
+        </div>
+        <div style="text-align: right;">
+            <small style="opacity: 0.7;">as of {{ form_status.date }}</small>
+        </div>
+    </div>
+
+    <div class="metric-grid">
+        <div class="metric-box ctl">
+            <div class="value">{{ "%.0f"|format(form_status.ctl) }}</div>
+            <div class="label">CTL (Fitness)</div>
+        </div>
+        <div class="metric-box atl">
+            <div class="value">{{ "%.0f"|format(form_status.atl) }}</div>
+            <div class="label">ATL (Fatigue)</div>
+        </div>
+        <div class="metric-box tsb {{ 'negative' if form_status.tsb < 0 else '' }}">
+            <div class="value">{{ "%+.0f"|format(form_status.tsb) }}</div>
+            <div class="label">TSB (Form)</div>
+        </div>
+    </div>
+</div>
+
+<!-- This Week Summary -->
+<div class="summary-grid">
+    <div class="summary-stat">
+        <div class="value">{{ fitness_summary.week_tss|int }}</div>
+        <div class="label">TSS This Week</div>
+    </div>
+    <div class="summary-stat">
+        <div class="value">{{ fitness_summary.week_activities }}</div>
+        <div class="label">Activities</div>
+    </div>
+    <div class="summary-stat">
+        <div class="value">{{ streak_info.current }}</div>
+        <div class="label">Current Streak</div>
+    </div>
+    <div class="summary-stat">
+        <div class="value">{{ streak_info.longest }}</div>
+        <div class="label">Longest Streak</div>
+    </div>
+</div>
+
+<!-- Training Load Chart -->
+<article>
+    <header>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Training Load</h3>
+            <select id="chart-days" style="width: auto; margin: 0; padding: 0.25rem 0.5rem;">
+                <option value="30">30 days</option>
+                <option value="60">60 days</option>
+                <option value="90" selected>90 days</option>
+                <option value="180">6 months</option>
+                <option value="365">1 year</option>
+            </select>
+        </div>
+    </header>
+    <div class="chart-container">
+        <canvas id="training-load-chart"></canvas>
+    </div>
+</article>
+
+<div class="grid">
+    <!-- Weekly Summary -->
+    <article>
+        <header><h3 style="margin: 0;">Weekly Summary</h3></header>
+        <div style="overflow-x: auto;">
+            <table class="weekly-table">
+                <thead>
+                    <tr>
+                        <th>Week</th>
+                        <th>Activities</th>
+                        <th>Distance</th>
+                        <th>Time</th>
+                        <th>TSS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in weekly_summary %}
+                    <tr>
+                        <td>{{ week.week }}</td>
+                        <td>{{ week.activities }}</td>
+                        <td>{{ week.distance_km }} km</td>
+                        <td>{{ week.time_hours }} hr</td>
+                        <td>{{ week.tss|int }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <!-- Recent Activities with TSS -->
+    <article>
+        <header><h3 style="margin: 0;">Recent Activities</h3></header>
+        <div style="overflow-x: auto;">
+            <table class="weekly-table">
+                <thead>
+                    <tr>
+                        <th>Activity</th>
+                        <th>Date</th>
+                        <th>TSS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in recent_activities %}
+                    <tr>
+                        <td>
+                            <a href="/activities/{{ activity.id }}">{{ activity.name }}</a>
+                            <br><small style="color: var(--muted-color);">{{ activity.type }}</small>
+                        </td>
+                        <td>{{ activity.date }}</td>
+                        <td>
+                            {% if activity.tss %}
+                            {{ activity.tss|int }}
+                            <span class="tss-badge {{ activity.tss_method }}">{{ activity.tss_method }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</div>
+
+<!-- Profile Info -->
+<div class="profile-info">
+    <strong>Profile:</strong>
+    Max HR: {{ profile.max_hr }}{% if not profile.has_user_max_hr %} (estimated){% endif %} |
+    LTHR: {{ profile.lthr }}{% if not profile.has_user_lthr %} (estimated){% endif %}
+    <a href="/settings" style="margin-left: 1rem;">Edit Settings →</a>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+let chart = null;
+
+async function loadChart(days) {
+    const response = await fetch(`/fitness/api/training-load?days=${days}`);
+    const data = await response.json();
+
+    const ctx = document.getElementById('training-load-chart').getContext('2d');
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [
+                {
+                    label: 'CTL (Fitness)',
+                    data: data.ctl,
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'ATL (Fatigue)',
+                    data: data.atl,
+                    borderColor: '#FF9800',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'TSB (Form)',
+                    data: data.tsb,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    hidden: true,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            const idx = context[0].dataIndex;
+                            const tss = data.tss[idx];
+                            return `Daily TSS: ${tss}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        display: false,
+                    },
+                    ticks: {
+                        maxTicksLimit: 10,
+                    }
+                },
+                y: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)',
+                    },
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const selector = document.getElementById('chart-days');
+    if (selector) {
+        loadChart(selector.value);
+        selector.addEventListener('change', function() {
+            loadChart(this.value);
+        });
+    }
+});
+</script>
+{% endblock %}

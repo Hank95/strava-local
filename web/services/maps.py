@@ -106,7 +106,7 @@ def generate_heatmap_html(
         center = (user_lat, user_lon) if user_lat and user_lon else (37.7749, -122.4194)
         m = folium.Map(location=center, zoom_start=11, tiles="cartodbpositron")
         info_html = '''
-        <div style="position: fixed; bottom: 32px; right: 32px;
+        <div style="position: fixed; top: 16px; right: 16px;
                     z-index: 9999; background-color: rgba(255,255,255,0.95); padding: 16px 20px; border-radius: 8px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(10px);">
             <p style="margin: 0; color: #666; font-size: 13px;">No activities with GPS data found.</p>
@@ -146,10 +146,10 @@ def generate_heatmap_html(
         gradient={0.2: "blue", 0.4: "cyan", 0.6: "lime", 0.8: "yellow", 1: "red"},
     ).add_to(m)
 
-    # Add info panel (positioned bottom-right to avoid corner clipping)
+    # Add info panel (positioned top-right to avoid corner clipping)
     limited_text = f"(showing {limit} most recent)" if len(activities) >= limit else ""
     info_html = f'''
-    <div style="position: fixed; bottom: 32px; right: 32px; z-index: 9999;
+    <div style="position: fixed; top: 16px; right: 16px; z-index: 9999;
                 background-color: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(10px);">
         <div style="font-size: 13px; font-weight: 600; color: #333;">Heatmap</div>
@@ -191,7 +191,7 @@ def generate_routes_html(
         center = (user_lat, user_lon) if user_lat and user_lon else (37.7749, -122.4194)
         m = folium.Map(location=center, zoom_start=11, tiles="cartodbpositron")
         info_html = '''
-        <div style="position: fixed; bottom: 32px; right: 32px;
+        <div style="position: fixed; top: 16px; right: 16px;
                     z-index: 9999; background-color: rgba(255,255,255,0.95); padding: 16px 20px; border-radius: 8px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(10px);">
             <p style="margin: 0; color: #666; font-size: 13px;">No activities with GPS data found.</p>
@@ -254,9 +254,10 @@ def generate_routes_html(
 
     limited_text = f"(showing {limit} most recent)" if len(activities) >= limit else ""
     legend_html = f'''
-    <div style="position: fixed; bottom: 32px; right: 32px; z-index: 9999;
+    <div style="position: fixed; top: 16px; right: 16px; z-index: 9999;
                 background-color: rgba(255,255,255,0.95); padding: 14px 16px; border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(10px); min-width: 160px;">
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(10px); min-width: 160px;
+                max-height: calc(100vh - 250px); overflow-y: auto;">
         <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 10px;">
             {len(activities)} Routes
         </div>

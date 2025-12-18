@@ -4,29 +4,38 @@
 
 {% block head %}
 <style>
-    /* Full-screen map layout */
-    .map-container {
+    /* Wrapper for positioning */
+    .map-wrapper {
         position: relative;
         width: 100%;
         height: calc(100vh - 180px);
         min-height: 500px;
+    }
+
+    /* Map container with clipped corners */
+    .map-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         border-radius: 12px;
         background: #e9ecef;
+        overflow: hidden;
     }
 
     .map-container iframe {
         width: 100%;
         height: 100%;
         border: none;
-        border-radius: 12px;
     }
 
-    /* Floating control panel */
+    /* Floating control panel (positioned relative to wrapper, not container) */
     .map-controls {
         position: absolute;
         top: 16px;
         left: 16px;
-        z-index: 1000;
+        z-index: 1001;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-radius: 12px;
@@ -197,15 +206,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="map-container">
-    <!-- Loading Overlay -->
-    <div id="map-loading" class="map-loading hidden">
-        <div class="loading-spinner">
-            <span>Loading map...</span>
-        </div>
-    </div>
-
-    <!-- Floating Controls -->
+<div class="map-wrapper">
+    <!-- Floating Controls (outside container to avoid clipping) -->
     <div id="map-controls" class="map-controls">
         <div class="controls-header">
             <h3>Explore</h3>
@@ -252,8 +254,17 @@
         </div>
     </div>
 
-    <!-- Map Frame -->
-    <iframe id="map-frame" src="about:blank"></iframe>
+    <div class="map-container">
+        <!-- Loading Overlay -->
+        <div id="map-loading" class="map-loading hidden">
+            <div class="loading-spinner">
+                <span>Loading map...</span>
+            </div>
+        </div>
+
+        <!-- Map Frame -->
+        <iframe id="map-frame" src="about:blank"></iframe>
+    </div>
 </div>
 {% endblock %}
 

@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Strava Local{% endblock %}
+
+{% block head %}
+<style>
+    .settings-section {
+        margin-bottom: 2rem;
+    }
+
+    .settings-section h3 {
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--muted-border-color);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+
+    .form-group small {
+        display: block;
+        color: var(--muted-color);
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    .form-group input {
+        margin-bottom: 0;
+    }
+
+    .estimate-value {
+        color: var(--muted-color);
+        font-style: italic;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .alert.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert.info {
+        background: #cce5ff;
+        color: #004085;
+        border: 1px solid #b8daff;
+    }
+
+    .zone-preview {
+        background: var(--card-background-color);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .zone-preview h4 {
+        margin: 0 0 0.75rem 0;
+        font-size: 0.9rem;
+    }
+
+    .zone-bar {
+        display: flex;
+        height: 30px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .zone-bar div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: white;
+    }
+
+    .zone-bar .z1 { background: #64B5F6; flex: 1; }
+    .zone-bar .z2 { background: #81C784; flex: 1; }
+    .zone-bar .z3 { background: #FFD54F; flex: 1; color: #333; }
+    .zone-bar .z4 { background: #FF8A65; flex: 1; }
+    .zone-bar .z5 { background: #E57373; flex: 1; }
+
+    .zone-labels {
+        display: flex;
+        font-size: 0.75rem;
+        color: var(--muted-color);
+    }
+
+    .zone-labels span {
+        flex: 1;
+        text-align: center;
+    }
+
+    .danger-zone {
+        border: 1px solid #f8d7da;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .danger-zone h4 {
+        color: #721c24;
+        margin: 0 0 1rem 0;
+    }
+
+    .btn-recompute {
+        background: var(--secondary);
+        border-color: var(--secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+
+{% if request.query_params.get('saved') %}
+<div class="alert success">
+    Profile saved successfully.
+</div>
+{% endif %}
+
+{% if request.query_params.get('recomputed') %}
+<div class="alert success">
+    Metrics recomputed for {{ request.query_params.get('count') }} activities.
+</div>
+{% endif %}
+
+<form action="/settings/profile" method="post">
+    <article>
+        <header><h3 style="margin: 0;">Athlete Profile</h3></header>
+
+        <p style="color: var(--muted-color); margin-bottom: 1.5rem;">
+            Enter your physiological parameters for accurate TSS and HR zone calculations.
+            Leave fields blank to use auto-estimated values from your activity data.
+        </p>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="max_hr">Maximum Heart Rate</label>
+                <input type="number" id="max_hr" name="max_hr"
+                       value="{{ profile.max_hr or '' }}"
+                       placeholder="{{ effective.max_hr or 'Unknown' }}"
+                       min="100" max="250">
+                <small>
+                    {% if effective.max_hr and not profile.max_hr %}
+                    Estimated: <span class="estimate-value">{{ effective.max_hr }} bpm</span>
+                    {% else %}
+                    Your maximum heart rate in bpm
+                    {% endif %}
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="lthr">Lactate Threshold HR (LTHR)</label>
+                <input type="number" id="lthr" name="lthr"
+                       value="{{ profile.lthr or '' }}"
+                       placeholder="{{ effective.lthr or 'Unknown' }}"
+                       min="80" max="220">
+                <small>
+                    {% if effective.lthr and not profile.lthr %}
+                    Estimated: <span class="estimate-value">{{ effective.lthr }} bpm</span> (89% of max)
+                    {% else %}
+                    HR you can sustain for ~1 hour
+                    {% endif %}
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="resting_hr">Resting Heart Rate</label>
+                <input type="number" id="resting_hr" name="resting_hr"
+                       value="{{ profile.resting_hr or '' }}"
+                       placeholder="60"
+                       min="30" max="100">
+                <small>Morning resting HR (defaults to 60)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="ftp">FTP (Functional Threshold Power)</label>
+                <input type="number" id="ftp" name="ftp"
+                       value="{{ profile.ftp or '' }}"
+                       placeholder="Not set"
+                       min="50" max="500">
+                <small>For power-based TSS (cycling)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="weight_kg">Body Weight</label>
+                <input type="number" id="weight_kg" name="weight_kg"
+                       value="{{ profile.weight_kg or '' }}"
+                       placeholder="Not set"
+                       min="30" max="200" step="0.1">
+                <small>Weight in kg (for power/weight metrics)</small>
+            </div>
+        </div>
+
+        {% if effective.hr_zones %}
+        <div class="zone-preview">
+            <h4>HR Zones (based on LTHR: {{ effective.lthr }} bpm)</h4>
+            <div class="zone-bar">
+                <div class="z1">Z1</div>
+                <div class="z2">Z2</div>
+                <div class="z3">Z3</div>
+                <div class="z4">Z4</div>
+                <div class="z5">Z5</div>
+            </div>
+            <div class="zone-labels">
+                <span>&lt;{{ effective.hr_zones.z1_max }}</span>
+                <span>{{ effective.hr_zones.z1_max }}-{{ effective.hr_zones.z2_max }}</span>
+                <span>{{ effective.hr_zones.z2_max }}-{{ effective.hr_zones.z3_max }}</span>
+                <span>{{ effective.hr_zones.z3_max }}-{{ effective.hr_zones.z4_max }}</span>
+                <span>&gt;{{ effective.hr_zones.z4_max }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <footer style="margin-top: 1.5rem;">
+            <button type="submit">Save Profile</button>
+        </footer>
+    </article>
+</form>
+
+<article>
+    <header><h3 style="margin: 0;">About Training Metrics</h3></header>
+
+    <h4>Training Stress Score (TSS)</h4>
+    <p>TSS quantifies training load. A score of 100 equals one hour at your lactate threshold. TSS is calculated using:</p>
+    <ul>
+        <li><strong>HR-based</strong>: Uses TRIMP formula with your HR stream data (most accurate)</li>
+        <li><strong>Duration-based</strong>: Estimates from activity type and duration (fallback)</li>
+    </ul>
+
+    <h4>Training Load Metrics</h4>
+    <ul>
+        <li><strong>CTL (Chronic Training Load)</strong>: 42-day rolling average of TSS - represents your "fitness"</li>
+        <li><strong>ATL (Acute Training Load)</strong>: 7-day rolling average of TSS - represents "fatigue"</li>
+        <li><strong>TSB (Training Stress Balance)</strong>: CTL - ATL - represents "form"
+            <ul>
+                <li>Positive TSB: Fresh and ready to perform</li>
+                <li>Negative TSB: Fatigued, need recovery</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>HR Zones (Friel Method)</h4>
+    <ul>
+        <li><strong>Z1 Recovery</strong>: &lt;68% LTHR</li>
+        <li><strong>Z2 Aerobic</strong>: 68-83% LTHR</li>
+        <li><strong>Z3 Tempo</strong>: 83-94% LTHR</li>
+        <li><strong>Z4 Threshold</strong>: 94-105% LTHR</li>
+        <li><strong>Z5 VO2max</strong>: &gt;105% LTHR</li>
+    </ul>
+</article>
+
+<div class="danger-zone">
+    <h4>Recompute Metrics</h4>
+    <p>After changing your profile, recompute all metrics to apply the new values:</p>
+    <form action="/settings/recompute" method="post" style="margin-top: 1rem;">
+        <button type="submit" class="btn-recompute">
+            Recompute All Metrics
+        </button>
+        <small style="display: block; margin-top: 0.5rem; color: var(--muted-color);">
+            This may take a while for large datasets.
+        </small>
+    </form>
+</div>
+{% endblock %}
