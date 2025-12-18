@@ -4,22 +4,41 @@
 
 {% block head %}
 <style>
-    /* Wrapper for positioning */
-    .map-wrapper {
-        position: relative;
-        width: 100%;
-        height: calc(100vh - 180px);
-        min-height: 500px;
+    /* Full-window map - override container */
+    body {
+        overflow: hidden;
     }
 
-    /* Map container with clipped corners */
+    main.container {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+    }
+
+    footer.container {
+        display: none;
+    }
+
+    /* Wrapper fills remaining viewport */
+    .map-wrapper {
+        position: fixed;
+        top: 56px; /* nav height */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: calc(100vh - 56px);
+    }
+
+    /* Map container - no borders, full size */
     .map-container {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        border-radius: 12px;
+        border-radius: 0;
         background: #e9ecef;
         overflow: hidden;
     }
