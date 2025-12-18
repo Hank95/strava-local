@@ -1,0 +1,5 @@
+# Strava Local - Dependencies
+sqlalchemy>=2.0.0
+fitparse>=1.2.0
+python-dateutil>=2.8.0
+folium>=0.15.0
