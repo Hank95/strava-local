@@ -3,136 +3,186 @@
 {% block title %}Dashboard - Strava Local{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="page-subtitle">
+        {% if stats.first_activity and stats.last_activity %}
+        {{ stats.first_activity.strftime('%b %Y') }} – {{ stats.last_activity.strftime('%b %Y') }}
+        {% endif %}
+    </p>
+</div>
 
-<!-- Summary Cards -->
-<div class="grid">
-    <article>
-        <header>Total Activities</header>
-        <h2>{{ "{:,}".format(stats.total_activities) }}</h2>
-        <footer>
-            {% if stats.first_activity and stats.last_activity %}
-            {{ stats.first_activity.strftime('%b %Y') }} - {{ stats.last_activity.strftime('%b %Y') }}
-            {% endif %}
-        </footer>
-    </article>
-    <article>
-        <header>Total Distance</header>
-        <h2>{{ "{:,.0f}".format(stats.total_distance_km) }} km</h2>
-        <footer>{{ "{:,.0f}".format(stats.total_distance_km / 1.609) }} miles</footer>
-    </article>
-    <article>
-        <header>Total Time</header>
-        <h2>{{ "{:,.0f}".format(stats.total_time_hours) }} hrs</h2>
-        <footer>{{ "{:,.1f}".format(stats.total_time_hours / 24) }} days</footer>
-    </article>
-    <article>
-        <header>GPS Tracks</header>
-        <h2>{{ stats.activities_with_gps }}</h2>
-        <footer>{{ stats.gps_percentage }}% of activities</footer>
-    </article>
+<!-- Summary Stats Grid -->
+<div class="dashboard-stats stagger-children">
+    <div class="stat-card stat-card--highlight animate-slide-up">
+        <div class="stat-card__header">Total Activities</div>
+        <div class="stat-card__value">{{ "{:,}".format(stats.total_activities) }}</div>
+        <div class="stat-card__footer">
+            {% set avg_per_week = (stats.total_activities / ((stats.last_activity - stats.first_activity).days / 7))|round(1) if stats.first_activity and stats.last_activity and (stats.last_activity - stats.first_activity).days > 0 else 0 %}
+            ~{{ "{:.1f}".format(avg_per_week) }} per week
+        </div>
+    </div>
+
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Total Distance</div>
+        <div class="stat-card__value">
+            {{ "{:,.0f}".format(stats.total_distance_km) }}
+            <span class="stat-card__unit">km</span>
+        </div>
+        <div class="stat-card__footer">{{ "{:,.0f}".format(stats.total_distance_km / 1.609) }} miles</div>
+    </div>
+
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Total Time</div>
+        <div class="stat-card__value">
+            {{ "{:,.0f}".format(stats.total_time_hours) }}
+            <span class="stat-card__unit">hrs</span>
+        </div>
+        <div class="stat-card__footer">{{ "{:,.1f}".format(stats.total_time_hours / 24) }} days of activity</div>
+    </div>
+
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">GPS Tracks</div>
+        <div class="stat-card__value">{{ stats.activities_with_gps }}</div>
+        <div class="stat-card__footer">
+            <div class="progress-bar" style="--progress: {{ stats.gps_percentage }}%;">
+                <div class="progress-bar__fill"></div>
+            </div>
+            <span class="progress-label">{{ stats.gps_percentage }}% with GPS</span>
+        </div>
+    </div>
 </div>
 
 <!-- Charts Row -->
-<div class="grid">
-    <article>
-        <header>Activities by Type</header>
-        <canvas id="type-chart" style="max-height: 300px;"></canvas>
-    </article>
-    <article>
-        <header>Activities Over Time</header>
-        <canvas id="time-chart" style="max-height: 300px;"></canvas>
-    </article>
+<div class="dashboard-charts stagger-children">
+    <div class="chart-card animate-slide-up">
+        <div class="chart-card__header">
+            <h3>Activities by Type</h3>
+        </div>
+        <div class="chart-card__canvas">
+            <canvas id="type-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card animate-slide-up">
+        <div class="chart-card__header">
+            <h3>Activities Over Time</h3>
+            <div class="period-selector" id="period-selector">
+                <button class="period-btn" data-period="week">Week</button>
+                <button class="period-btn active" data-period="month">Month</button>
+                <button class="period-btn" data-period="year">Year</button>
+            </div>
+        </div>
+        <div class="chart-card__canvas">
+            <canvas id="time-chart"></canvas>
+        </div>
+    </div>
 </div>
 
 <!-- Recent Activities -->
-<article>
-    <header>Recent Activities</header>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Distance</th>
-                <th>Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for activity in recent_activities %}
-            <tr>
-                <td>{{ activity.start_time.strftime('%Y-%m-%d') if activity.start_time else '-' }}</td>
-                <td><a href="/activities/{{ activity.activity_id }}">{{ activity.name or 'Unnamed' }}</a></td>
-                <td>{{ activity.activity_type or '-' }}</td>
-                <td>{{ "{:.1f}".format(activity.distance / 1000) if activity.distance else '-' }} km</td>
-                <td>
-                    {% if activity.moving_time %}
-                    {{ (activity.moving_time // 60)|int }}:{{ "%02d"|format((activity.moving_time % 60)|int) }}
-                    {% else %}-{% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <footer>
-        <a href="/activities">View all activities</a>
-    </footer>
-</article>
+<div class="chart-card animate-slide-up">
+    <div class="chart-card__header">
+        <h3>Recent Activities</h3>
+        <a href="/activities" class="view-all-link">View All →</a>
+    </div>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Distance</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in recent_activities %}
+                <tr>
+                    <td>
+                        <span class="text-muted">
+                            {{ activity.start_time.strftime('%b %d') if activity.start_time else '-' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/activities/{{ activity.activity_id }}" class="activity-link">
+                            {{ activity.name or 'Unnamed Activity' }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="activity-badge activity-badge--{{ (activity.activity_type or 'other')|lower|replace(' ', '') }}">
+                            {{ activity.activity_type or 'Other' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if activity.distance %}
+                        <strong>{{ "{:.1f}".format(activity.distance / 1000) }}</strong>
+                        <span class="text-muted">km</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.moving_time %}
+                        {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format((activity.moving_time % 3600) // 60) }}
+                        {% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Activity type pie chart
+// Activity type breakdown data
 const typeData = {{ type_breakdown | tojson }};
-new Chart(document.getElementById('type-chart'), {
-    type: 'doughnut',
-    data: {
-        labels: typeData.map(d => d.type),
-        datasets: [{
-            data: typeData.map(d => d.count),
-            backgroundColor: [
-                '#FF5722', '#2196F3', '#4CAF50', '#8BC34A', '#00BCD4',
-                '#9C27B0', '#FFEB3B', '#F44336', '#795548', '#607D8B'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'right',
-            }
-        }
-    }
-});
+const labels = typeData.map(d => d.type);
+const data = typeData.map(d => d.count);
 
-// Activities over time bar chart
+// Create doughnut chart using ChartConfig
+const typeChartConfig = ChartConfig.doughnut(labels, data);
+new Chart(document.getElementById('type-chart'), typeChartConfig);
+
+// Activities over time - with period switching
 const timeData = {{ time_data | tojson }};
-new Chart(document.getElementById('time-chart'), {
-    type: 'bar',
-    data: {
-        labels: timeData.map(d => d.period),
-        datasets: [{
+let timeChart = null;
+
+function createTimeChart() {
+    const config = ChartConfig.bar(
+        timeData.map(d => d.period),
+        [{
             label: 'Activities',
             data: timeData.map(d => d.count),
-            backgroundColor: '#2196F3'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            x: {
-                ticks: {
-                    maxTicksLimit: 12
-                }
-            }
+            backgroundColor: ChartConfig.colors.primary,
+        }],
+        {
+            plugins: {
+                legend: { display: false },
+            },
+            scales: {
+                x: {
+                    ticks: { maxTicksLimit: 12 },
+                },
+            },
         }
+    );
+
+    if (timeChart) {
+        timeChart.destroy();
     }
+    timeChart = new Chart(document.getElementById('time-chart'), config);
+}
+
+createTimeChart();
+
+// Period selector (visual only for now - would need backend API for real data)
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        // Future: fetch data for selected period via HTMX or fetch()
+    });
 });
 </script>
 {% endblock %}

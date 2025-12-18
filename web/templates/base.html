@@ -14,23 +14,32 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Chart Configuration Module -->
+    <script src="{{ url_for('static', path='js/charts.js') }}"></script>
+
     <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="container-fluid">
+    <nav class="main-nav container-fluid">
         <ul>
-            <li><strong>Strava Local</strong></li>
+            <li><a href="/" class="nav-brand"><strong>Strava Local</strong></a></li>
         </ul>
-        <ul>
-            <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Dashboard</a></li>
-            <li><a href="/activities" {% if request.url.path.startswith("/activities") %}aria-current="page"{% endif %}>Activities</a></li>
-            <li><a href="/maps" {% if request.url.path.startswith("/maps") %}aria-current="page"{% endif %}>Maps</a></li>
-            <li><a href="/fitness" {% if request.url.path.startswith("/fitness") %}aria-current="page"{% endif %}>Fitness</a></li>
-            <li><a href="/analysis" {% if request.url.path.startswith("/analysis") %}aria-current="page"{% endif %}>Analysis</a></li>
-            <li><a href="/settings" {% if request.url.path.startswith("/settings") %}aria-current="page"{% endif %}>Settings</a></li>
+        <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+        <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link{% if request.url.path == "/" %} active{% endif %}">Dashboard</a></li>
+            <li><a href="/activities" class="nav-link{% if request.url.path.startswith("/activities") %} active{% endif %}">Activities</a></li>
+            <li><a href="/maps" class="nav-link{% if request.url.path.startswith("/maps") %} active{% endif %}">Maps</a></li>
+            <li><a href="/fitness" class="nav-link{% if request.url.path.startswith("/fitness") %} active{% endif %}">Fitness</a></li>
+            <li><a href="/analysis" class="nav-link{% if request.url.path.startswith("/analysis") %} active{% endif %}">Analysis</a></li>
+            <li><a href="/settings" class="nav-link{% if request.url.path.startswith("/settings") %} active{% endif %}">Settings</a></li>
         </ul>
     </nav>
 
