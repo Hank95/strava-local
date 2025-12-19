@@ -32,18 +32,13 @@ class Colors:
 def print_banner():
     """Print the welcome banner."""
     banner = f"""
-{Colors.BOLD}{Colors.CYAN}
-  ╔═══════════════════════════════════════════════════════════╗
-  ║                                                           ║
-  ║   {Colors.GREEN}███████╗{Colors.CYAN}╔╦╗╦═╗╔═╗╦  ╦╔═╗  {Colors.GREEN}██╗      ██████╗  ██████╗{Colors.CYAN}   ║
-  ║   {Colors.GREEN}██╔════╝{Colors.CYAN} ║ ╠╦╝╠═╣╚╗╔╝╠═╣  {Colors.GREEN}██║     ██╔═══██╗██╔════╝{Colors.CYAN}   ║
-  ║   {Colors.GREEN}███████╗{Colors.CYAN} ║ ╠╩╗╠═╣ ╚╝ ╠═╣  {Colors.GREEN}██║     ██║   ██║██║     {Colors.CYAN}   ║
-  ║   {Colors.GREEN}╚════██║{Colors.CYAN} ║ ╩ ╩╩ ╩    ╩ ╩  {Colors.GREEN}██║     ██║   ██║██║     {Colors.CYAN}   ║
-  ║   {Colors.GREEN}███████║{Colors.CYAN} ╩ ╩ ╩╩ ╩    ╩ ╩  {Colors.GREEN}███████╗╚██████╔╝╚██████╗{Colors.CYAN}   ║
-  ║   {Colors.GREEN}╚══════╝{Colors.CYAN}                  {Colors.GREEN}╚══════╝ ╚═════╝  ╚═════╝{Colors.CYAN}   ║
-  ║                                                           ║
-  ║          {Colors.DIM}Your Strava data, stored locally{Colors.CYAN}{Colors.BOLD}              ║
-  ╚═══════════════════════════════════════════════════════════╝
+{Colors.BOLD}
+  ┌─────────────────────────────────────────┐
+  │                                         │
+  │   {Colors.GREEN}STRAVA LOCAL{Colors.END}{Colors.BOLD}                        │
+  │   {Colors.DIM}Your Strava data, stored locally{Colors.END}{Colors.BOLD}  │
+  │                                         │
+  └─────────────────────────────────────────┘
 {Colors.END}"""
     print(banner)
 
@@ -124,24 +119,31 @@ def check_venv():
 
 
 def create_venv():
-    """Create a virtual environment."""
+    """Create a virtual environment and return the path to its Python."""
     venv_path = Path(".venv")
     if venv_path.exists():
         print_warning(".venv already exists")
-        return True
+        # Return the venv python path
+        if sys.platform == "win32":
+            return venv_path / "Scripts" / "python.exe"
+        return venv_path / "bin" / "python"
 
     try:
         subprocess.run([sys.executable, "-m", "venv", ".venv"], check=True)
         print_success("Created virtual environment at .venv")
-        return True
+        # Return the venv python path
+        if sys.platform == "win32":
+            return venv_path / "Scripts" / "python.exe"
+        return venv_path / "bin" / "python"
     except subprocess.CalledProcessError:
         print_error("Failed to create virtual environment")
-        return False
+        return None
 
 
-def install_dependencies():
+def install_dependencies(python_path=None):
     """Install Python dependencies."""
-    pip_cmd = [sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "-q"]
+    python = str(python_path) if python_path else sys.executable
+    pip_cmd = [python, "-m", "pip", "install", "-r", "requirements.txt", "-q"]
     try:
         subprocess.run(pip_cmd, check=True)
         print_success("Installed all dependencies")
@@ -234,11 +236,21 @@ def configure_athlete_profile(db):
 
 def print_next_steps():
     """Print next steps for the user."""
+    # Check if venv exists to customize instructions
+    venv_exists = Path(".venv").exists()
+    activate_hint = ""
+    if venv_exists:
+        activate_hint = f"""
+  {Colors.CYAN}0.{Colors.END} Activate the virtual environment (if not already):
+     {Colors.BOLD}source .venv/bin/activate{Colors.END}  {Colors.DIM}# macOS/Linux{Colors.END}
+     {Colors.BOLD}.venv\\Scripts\\activate{Colors.END}     {Colors.DIM}# Windows{Colors.END}
+"""
+
     print(f"""
 {Colors.BOLD}{Colors.GREEN}Setup Complete!{Colors.END}
 
 {Colors.BOLD}Next Steps:{Colors.END}
-
+{activate_hint}
   {Colors.CYAN}1.{Colors.END} Export your data from Strava:
      {Colors.DIM}Go to strava.com → Settings → My Account → Download your data{Colors.END}
 
@@ -264,35 +276,49 @@ def main():
     """Main setup flow."""
     os.chdir(Path(__file__).parent)
 
-    print_banner()
+    # Check if we're being run with --continue flag (after venv creation)
+    continue_mode = "--continue" in sys.argv
+
+    if not continue_mode:
+        print_banner()
 
     total_steps = 5
+    venv_python = None
 
     # Step 1: Check Python
-    print_step(1, total_steps, "Checking Python version")
-    if not check_python_version():
-        sys.exit(1)
+    if not continue_mode:
+        print_step(1, total_steps, "Checking Python version")
+        if not check_python_version():
+            sys.exit(1)
 
-    # Step 2: Virtual environment
-    print_step(2, total_steps, "Setting up virtual environment")
-    in_venv = check_venv()
+        # Step 2: Virtual environment
+        print_step(2, total_steps, "Setting up virtual environment")
+        in_venv = check_venv()
 
-    if not in_venv:
-        if ask_yes_no("Create a virtual environment?", default=True):
-            if create_venv():
-                print_warning("Please activate the venv and re-run setup:")
-                print_info("  source .venv/bin/activate  # macOS/Linux")
-                print_info("  .venv\\Scripts\\activate     # Windows")
-                print_info("  python setup.py")
-                sys.exit(0)
-        else:
-            print_warning("Continuing without virtual environment")
-
-    # Step 3: Install dependencies
-    print_step(3, total_steps, "Installing dependencies")
-    if not install_dependencies():
-        print_error("Please fix dependency issues and try again")
-        sys.exit(1)
+        if not in_venv:
+            if ask_yes_no("Create a virtual environment?", default=True):
+                venv_python = create_venv()
+                if venv_python:
+                    print_info("Installing dependencies in virtual environment...")
+                    # Install deps in venv, then re-run ourselves with venv python
+                    if not install_dependencies(venv_python):
+                        print_error("Please fix dependency issues and try again")
+                        sys.exit(1)
+                    # Re-execute setup with venv python to continue
+                    print_success("Continuing setup with virtual environment...")
+                    result = subprocess.run([str(venv_python), __file__, "--continue"])
+                    sys.exit(result.returncode)
+            else:
+                print_warning("Continuing without virtual environment")
+                # Step 3: Install dependencies
+                print_step(3, total_steps, "Installing dependencies")
+                if not install_dependencies():
+                    print_error("Please fix dependency issues and try again")
+                    sys.exit(1)
+    else:
+        # Continue mode - we're running in the venv
+        print_step(3, total_steps, "Dependencies installed")
+        print_success("Using virtual environment")
 
     # Step 4: Create directories and database
     print_step(4, total_steps, "Setting up data directories")
