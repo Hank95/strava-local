@@ -32,14 +32,18 @@ class Colors:
 def print_banner():
     """Print the welcome banner."""
     banner = f"""
-{Colors.BOLD}
-  ┌─────────────────────────────────────────┐
-  │                                         │
-  │   {Colors.GREEN}STRAVA LOCAL{Colors.END}{Colors.BOLD}                        │
-  │   {Colors.DIM}Your Strava data, stored locally{Colors.END}{Colors.BOLD}  │
-  │                                         │
-  └─────────────────────────────────────────┘
-{Colors.END}"""
+{Colors.BOLD}{Colors.GREEN}
+   _____ _                        _                    _
+  / ____| |                      | |                  | |
+ | (___ | |_ _ __ __ ___   ____ _| |     ___   ___ __ _| |
+  \\___ \\| __| '__/ _` \\ \\ / / _` | |    / _ \\ / __/ _` | |
+  ____) | |_| | | (_| |\\ V / (_| | |___| (_) | (_| (_| | |
+ |_____/ \\__|_|  \\__,_| \\_/ \\__,_|______\\___/ \\___\\__,_|_|
+{Colors.END}
+{Colors.CYAN}  ─────────────────────────────────────────────────────────
+{Colors.BOLD}              Your Strava data, stored locally
+{Colors.CYAN}  ─────────────────────────────────────────────────────────{Colors.END}
+"""
     print(banner)
 
 
@@ -247,15 +251,17 @@ def print_next_steps():
 """
 
     print(f"""
-{Colors.BOLD}{Colors.GREEN}Setup Complete!{Colors.END}
-
+{Colors.BOLD}{Colors.GREEN}
+  ✓ Setup Complete!
+{Colors.END}
 {Colors.BOLD}Next Steps:{Colors.END}
 {activate_hint}
   {Colors.CYAN}1.{Colors.END} Export your data from Strava:
      {Colors.DIM}Go to strava.com → Settings → My Account → Download your data{Colors.END}
 
-  {Colors.CYAN}2.{Colors.END} Extract your FIT files:
-     {Colors.DIM}Unzip the export and copy the 'activities' folder here{Colors.END}
+  {Colors.CYAN}2.{Colors.END} Extract and copy your data:
+     {Colors.YELLOW}activities/{Colors.END}      {Colors.DIM}← folder containing your .fit.gz files{Colors.END}
+     {Colors.YELLOW}activities.csv{Colors.END}   {Colors.DIM}← file with activity metadata{Colors.END}
 
   {Colors.CYAN}3.{Colors.END} Import your activities:
      {Colors.BOLD}python -m scripts.ingest{Colors.END}
@@ -268,7 +274,7 @@ def print_next_steps():
      {Colors.DIM}Then open http://localhost:8000 in your browser{Colors.END}
 
 {Colors.DIM}─────────────────────────────────────────────────────────────{Colors.END}
-{Colors.DIM}Tip: You can update your settings anytime at /settings{Colors.END}
+{Colors.DIM}Tip: You can update your athlete settings anytime at /settings{Colors.END}
 """)
 
 

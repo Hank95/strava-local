@@ -2,7 +2,34 @@
 
 A local ingestion and analysis tool for Strava activity data. Ingest your Strava export (CSV + FIT files) into a local SQLite database for analysis and visualization.
 
-**All data stays local** - your activity data, GPS tracks, and generated maps are never uploaded anywhere.
+**All data stays local** - your activity data, GPS tracks, and training metrics are never uploaded anywhere.
+
+## Features
+
+- **Dashboard**: Summary statistics, activity breakdown charts, recent activities
+- **Activity Browser**: Searchable, filterable table with detailed activity pages
+- **Maps**: Interactive heatmap and route explorer with filters
+- **Training Metrics**: TSS, CTL/ATL/TSB (fitness/fatigue/form), HR zones, TRIMP
+- **Analysis**: Personal records, heart rate statistics
+- **Pace & Speed**: Displays pace (min/mile) for runs, speed (mph) for other activities
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/strava-local.git
+cd strava-local
+
+# Run the interactive setup
+python3 setup.py
+```
+
+The setup script will:
+1. Check your Python version (3.10+ required)
+2. Create a virtual environment
+3. Install dependencies
+4. Initialize the database
+5. Optionally configure your athlete profile (max HR, LTHR, etc.)
 
 ## Getting Your Strava Data
 
@@ -12,23 +39,55 @@ A local ingestion and analysis tool for Strava activity data. Ingest your Strava
 4. Click "Request Your Archive"
 5. Wait for email (can take a few hours)
 6. Download and extract the ZIP file
-7. You'll have `activities.csv` and an `activities/` folder with FIT and GPX files
+7. Copy these to the project root:
+   - `activities/` - folder containing your .fit.gz files
+   - `activities.csv` - file with activity metadata
 
-## Requirements
+## Usage
 
-- Python 3.11+
-- macOS/Linux
-
-## Setup
+### Import Your Data
 
 ```bash
-# Create virtual environment
-python3 -m venv .venv
+# Activate virtual environment (if not already)
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Import activities from CSV and FIT files
+python -m scripts.ingest
 ```
+
+The ingestion is idempotent - re-running will update existing records rather than creating duplicates.
+
+### Compute Training Metrics
+
+```bash
+python -m scripts.compute_metrics
+```
+
+This calculates:
+- **TSS** (Training Stress Score) - workout intensity
+- **TRIMP** (Training Impulse) - HR-based training load
+- **HR Zones** - time spent in each heart rate zone
+- **CTL/ATL/TSB** - fitness, fatigue, and form over time
+
+### Start the Web Dashboard
+
+```bash
+python -m web.run
+```
+
+Then open http://localhost:8000 in your browser.
+
+## Athlete Settings
+
+For accurate training metrics, configure your athlete profile at `/settings` or during setup:
+
+- **Max Heart Rate**: Your maximum heart rate (bpm)
+- **Resting Heart Rate**: Your resting heart rate (bpm)
+- **LTHR**: Lactate threshold heart rate (bpm)
+- **FTP**: Functional threshold power (watts) - for cycling
+- **Weight**: Body weight (kg) - for power-to-weight calculations
+
+If not set, the system will estimate values based on your data.
 
 ## Project Structure
 
@@ -39,45 +98,20 @@ strava-local/
 ├── data/                # SQLite database location
 │   └── strava_local.db
 ├── db/                  # Database models and schema
-│   └── models.py
-├── ingest/              # Ingestion logic
-│   ├── csv_loader.py    # CSV parsing
-│   ├── fit_parser.py    # FIT file parsing
-│   ├── gpx_parser.py    # GPX file parsing
-│   └── ingest.py        # Main ingestion orchestration
+├── ingest/              # CSV and FIT file parsing
+├── metrics/             # Training metrics computation
 ├── scripts/             # CLI entry points
-│   ├── ingest.py        # Run ingestion
-│   ├── stats.py         # View statistics
-│   ├── latest.py        # View latest activity
-│   ├── map.py           # Generate map visualizations
-│   └── serve.py         # Start web server
 ├── web/                 # Web application
-│   ├── app.py           # FastAPI application
-│   ├── routes/          # Route handlers
+│   ├── routes/          # API and page routes
 │   ├── services/        # Business logic
 │   ├── templates/       # Jinja2 HTML templates
 │   └── static/          # CSS and JS files
+├── setup.py             # Interactive setup script
 ├── requirements.txt
 └── README.md
 ```
 
-## Usage
-
-### Ingest Data
-
-Run the ingestion to load your CSV and FIT files into the database:
-
-```bash
-python -m scripts.ingest --csv activities.csv --fit-dir activities/
-```
-
-Options:
-- `--csv PATH`: Path to activities CSV file (required)
-- `--fit-dir PATH`: Path to directory containing FIT files (required)
-- `--db PATH`: Custom database path (default: `data/strava_local.db`)
-- `--quiet`: Suppress progress output
-
-The ingestion is idempotent - re-running will update existing records rather than creating duplicates.
+## CLI Commands
 
 ### View Statistics
 
@@ -85,112 +119,47 @@ The ingestion is idempotent - re-running will update existing records rather tha
 python -m scripts.stats
 ```
 
-Shows:
-- Total number of activities
-- Number of activities with GPS tracks
-- Date range
-- Top 5 activity types
-
 ### View Latest Activity
 
 ```bash
 python -m scripts.latest
 ```
 
-Shows details about the most recent activity including:
-- Name, type, date
-- Distance, time, speed
-- Heart rate, elevation, calories
-- Whether FIT file and GPS data are available
-
 ### Generate Maps
 
-Create interactive HTML maps of your activities:
-
 ```bash
-# Generate a heatmap of all GPS points
+# Heatmap of all GPS points
 python -m scripts.map --heatmap
 
-# Generate a map with all routes overlaid
+# All routes overlaid
 python -m scripts.map --routes
 
-# Generate a map for a single activity
+# Single activity
 python -m scripts.map --activity <ACTIVITY_ID>
 
-# Filter by activity type
+# Filter by type or date
 python -m scripts.map --routes --type Run
-
-# Filter by date range
 python -m scripts.map --heatmap --after 2024-01-01 --before 2024-12-31
-
-# Limit number of activities (most recent first)
-python -m scripts.map --routes --limit 50
-
-# Custom output path
-python -m scripts.map --heatmap -o my_heatmap.html
 ```
 
-Maps are saved to `data/map.html` by default. Open the HTML file in a browser to view.
+## Advanced Usage
 
-**Map Modes:**
-- `--heatmap`: Shows density of GPS points across all activities
-- `--routes`: Shows all routes overlaid, colored by activity type
-- `--activity ID`: Shows a single activity with start/end markers
-
-### Web Interface
-
-Start the web server to explore your data in a browser:
+### Custom Ingestion Options
 
 ```bash
-python -m scripts.serve
+python -m scripts.ingest --csv activities.csv --fit-dir activities/ --db data/custom.db
 ```
 
-Then open http://127.0.0.1:8000 in your browser.
+Options:
+- `--csv PATH`: Path to activities CSV file
+- `--fit-dir PATH`: Path to directory containing FIT files
+- `--db PATH`: Custom database path
+- `--quiet`: Suppress progress output
 
-**Features:**
-- **Dashboard**: Summary statistics, activity charts, recent activities
-- **Activity Browser**: Searchable, filterable table of all activities with detail pages
-- **Maps**: Interactive heatmap and routes explorer with filters
-- **Analysis**: Personal records, heart rate statistics
-
-The web interface provides the same functionality as the CLI tools but with an interactive UI.
-
-## Database Schema
-
-### activities
-Main table storing activity metadata from the CSV:
-- `activity_id` (PK): Strava activity ID
-- `name`, `activity_type`, `start_time`
-- `distance`, `moving_time`, `elapsed_time`
-- `avg_speed`, `max_speed`
-- `avg_hr`, `max_hr`
-- `elevation_gain`, `elevation_loss`, `elevation_low`, `elevation_high`
-- `avg_watts`, `max_watts`, `avg_cadence`, `max_cadence`
-- `calories`, `athlete_weight`
-- `csv_extra` (JSON): Any additional CSV columns
-
-### fit_files
-FIT file metadata:
-- `activity_id` (FK): Links to activities table
-- `fit_path`, `file_size`, `sha256`
-- `fit_start_time`, `fit_sport`, `fit_distance`
-- `ingested_at`
-
-### streams
-Time-series data extracted from FIT files:
-- `activity_id` (FK): Links to activities table
-- `route` (JSON): Downsampled `[[lat, lon], ...]` array
-- `heart_rate` (JSON): Downsampled HR array
-- `altitude` (JSON): Downsampled altitude array
-- `has_gps`: Boolean flag for quick filtering
-- `original_point_count`: Points before downsampling
-
-## Querying the Database
-
-You can query the database directly with Python or any SQLite client:
+### Querying the Database
 
 ```python
-from db import get_session, Activity, Stream
+from db.models import get_session, Activity, Stream
 
 session = get_session()
 
@@ -202,28 +171,41 @@ runs_with_gps = (
     .filter(Stream.has_gps == True)
     .all()
 )
-
-# Get total distance by activity type
-from sqlalchemy import func
-stats = (
-    session.query(
-        Activity.activity_type,
-        func.count(Activity.activity_id),
-        func.sum(Activity.distance) / 1000  # km
-    )
-    .group_by(Activity.activity_type)
-    .all()
-)
 ```
 
-Or with the SQLite CLI:
+Or with SQLite CLI:
 
 ```bash
-sqlite3 data/strava_local.db "SELECT activity_type, COUNT(*), SUM(distance)/1000 FROM activities GROUP BY activity_type"
+sqlite3 data/strava_local.db "SELECT activity_type, COUNT(*), SUM(distance)/1609 as miles FROM activities GROUP BY activity_type"
 ```
+
+## Database Schema
+
+### activities
+Activity metadata from CSV: `activity_id`, `name`, `activity_type`, `start_time`, `distance`, `moving_time`, `avg_speed`, `avg_hr`, `elevation_gain`, `calories`, etc.
+
+### fit_files
+FIT file metadata: `activity_id`, `fit_path`, `file_size`, `sha256`, `fit_sport`
+
+### streams
+Time-series data from FIT files: `route` (GPS), `heart_rate`, `altitude`, `has_gps`
+
+### activity_metrics
+Computed training metrics: `tss`, `trimp`, `intensity_factor`, `hr_z1_time` through `hr_z5_time`
+
+### athlete_profile
+User settings: `max_hr`, `resting_hr`, `lthr`, `ftp`, `weight_kg`
+
+### rolling_averages
+Daily CTL/ATL/TSB values for fitness tracking
+
+## Requirements
+
+- Python 3.10+
+- macOS/Linux/Windows
 
 ## Notes
 
-- FIT and GPX files are matched to CSV activities by activity ID (from filename) or by start time (within 10 minutes)
-- FIT files are preferred over GPX when both exist for the same activity
+- FIT files are matched to CSV activities by activity ID or start time
 - GPS routes are downsampled to max 500 points to reduce storage
+- All units displayed in imperial (miles, feet, mph, min/mile)
