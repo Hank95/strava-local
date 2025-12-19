@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Activities - Strava Local{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Activities</h1>
+    <p class="page-subtitle">Browse and filter your {{ total }} activities</p>
+</div>
+
+<!-- Filters -->
+<div class="filter-panel animate-fade-in">
+    <form method="get" action="/activities" class="filter-panel__form">
+        <div class="filter-panel__grid">
+            <div class="filter-group">
+                <label class="filter-group__label" for="type-filter">Type</label>
+                <select name="type" id="type-filter" class="filter-group__input" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    {% for t in activity_types %}
+                    <option value="{{ t }}" {% if current_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-group__label" for="after-filter">After</label>
+                <input type="date" name="after" id="after-filter" class="filter-group__input"
+                       value="{{ current_after or '' }}" onchange="this.form.submit()">
+            </div>
+            <div class="filter-group">
+                <label class="filter-group__label" for="before-filter">Before</label>
+                <input type="date" name="before" id="before-filter" class="filter-group__input"
+                       value="{{ current_before or '' }}" onchange="this.form.submit()">
+            </div>
+            <div class="filter-group">
+                <label class="filter-group__label" for="gps-filter">GPS Data</label>
+                <select name="has_gps" id="gps-filter" class="filter-group__input" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    <option value="true" {% if current_has_gps == true %}selected{% endif %}>With GPS</option>
+                    <option value="false" {% if current_has_gps == false %}selected{% endif %}>Without GPS</option>
+                </select>
+            </div>
+        </div>
+        {% if current_type or current_after or current_before or current_has_gps is not none %}
+        <div class="filter-panel__footer">
+            <a href="/activities" class="btn btn--text">Clear Filters</a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Results info -->
+<div class="results-info">
+    <span class="text-muted">
+        Showing <strong>{{ activities|length }}</strong> of <strong>{{ total }}</strong> activities
+        {% if total_pages > 1 %}· Page {{ page }} of {{ total_pages }}{% endif %}
+    </span>
+</div>
+
+<!-- Activity Table -->
+<div class="chart-card animate-slide-up">
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Distance</th>
+                    <th>Time</th>
+                    <th>Pace/Speed</th>
+                    <th>HR</th>
+                    <th>Elev</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in activities %}
+                <tr>
+                    <td>
+                        <span class="text-muted">
+                            {{ activity.start_time.strftime('%b %d') if activity.start_time else '-' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/activities/{{ activity.activity_id }}" class="activity-link">
+                            {{ activity.name or 'Unnamed Activity' }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="activity-badge activity-badge--{{ (activity.activity_type or 'other')|lower|replace(' ', '') }}">
+                            {{ activity.activity_type or 'Other' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if activity.distance %}
+                        <strong>{{ "{:.1f}".format(activity.distance / 1609.34) }}</strong>
+                        <span class="text-muted text-xs">mi</span>
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.moving_time %}
+                        {{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format((activity.moving_time % 3600) // 60) }}
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.activity_type and activity.activity_type.lower() == 'run' and activity.distance and activity.moving_time %}
+                        {% set tbl_pace_sec = activity.moving_time / (activity.distance / 1609.34) %}
+                        {{ (tbl_pace_sec // 60)|int }}:{{ "%02d"|format((tbl_pace_sec % 60)|int) }}
+                        <span class="text-muted text-xs">/mi</span>
+                        {% elif activity.avg_speed %}
+                        {{ "{:.1f}".format(activity.avg_speed * 2.237) }}
+                        <span class="text-muted text-xs">mph</span>
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.avg_hr %}
+                        {{ "{:.0f}".format(activity.avg_hr) }}
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if activity.elevation_gain %}
+                        {{ "{:.0f}".format(activity.elevation_gain * 3.281) }}
+                        <span class="text-muted text-xs">ft</span>
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Pagination">
+    <ul class="pagination__list">
+        {% if page > 1 %}
+        <li>
+            <a href="?page={{ page - 1 }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_after %}&after={{ current_after }}{% endif %}{% if current_before %}&before={{ current_before }}{% endif %}"
+               class="pagination__link pagination__link--prev">
+                ← Previous
+            </a>
+        </li>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <li><span class="pagination__link pagination__link--current">{{ p }}</span></li>
+            {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+            <li>
+                <a href="?page={{ p }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_after %}&after={{ current_after }}{% endif %}{% if current_before %}&before={{ current_before }}{% endif %}"
+                   class="pagination__link">{{ p }}</a>
+            </li>
+            {% elif p == 4 or p == total_pages - 3 %}
+            <li><span class="pagination__ellipsis">…</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <li>
+            <a href="?page={{ page + 1 }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_after %}&after={{ current_after }}{% endif %}{% if current_before %}&before={{ current_before }}{% endif %}"
+               class="pagination__link pagination__link--next">
+                Next →
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

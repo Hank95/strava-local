@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}{{ activity.name or 'Activity' }} - Strava Local{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-md">
+    <ul>
+        <li><a href="/activities">Activities</a></li>
+        <li>{{ activity.name or 'Unnamed Activity' }}</li>
+    </ul>
+</nav>
+
+<!-- Activity Hero -->
+<div class="activity-hero animate-fade-in">
+    <div class="activity-hero__content">
+        <span class="activity-badge activity-badge--{{ (activity.activity_type or 'other')|lower|replace(' ', '') }} activity-badge--large">
+            {{ activity.activity_type or 'Activity' }}
+        </span>
+        <h1 class="activity-hero__title">{{ activity.name or 'Unnamed Activity' }}</h1>
+        <p class="activity-hero__date">
+            {{ activity.start_time.strftime('%A, %B %d, %Y at %H:%M') if activity.start_time else 'Unknown date' }}
+        </p>
+    </div>
+    <div class="activity-hero__stats">
+        {% if activity.distance %}
+        <div class="hero-stat">
+            <span class="hero-stat__value">{{ "{:.1f}".format(activity.distance / 1609.34) }}</span>
+            <span class="hero-stat__label">miles</span>
+        </div>
+        {% endif %}
+        {% if activity.moving_time %}
+        <div class="hero-stat">
+            <span class="hero-stat__value">{{ (activity.moving_time // 3600)|int }}:{{ "%02d"|format((activity.moving_time % 3600) // 60) }}</span>
+            <span class="hero-stat__label">time</span>
+        </div>
+        {% endif %}
+        {% if activity.activity_type and activity.activity_type.lower() == 'run' and activity.distance and activity.moving_time %}
+        {% set hero_pace_sec = activity.moving_time / (activity.distance / 1609.34) %}
+        <div class="hero-stat">
+            <span class="hero-stat__value">{{ (hero_pace_sec // 60)|int }}:{{ "%02d"|format((hero_pace_sec % 60)|int) }}</span>
+            <span class="hero-stat__label">min/mi</span>
+        </div>
+        {% endif %}
+        {% if activity.elevation_gain %}
+        <div class="hero-stat">
+            <span class="hero-stat__value">{{ "{:,.0f}".format(activity.elevation_gain * 3.281) }}</span>
+            <span class="hero-stat__label">ft elev</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Map -->
+{% if stream and stream.has_gps %}
+<div class="chart-card animate-slide-up mb-lg">
+    <div class="chart-card__header">
+        <h3>Route</h3>
+    </div>
+    <div class="map-container">
+        <iframe
+            src="/maps/embed/activity/{{ activity.activity_id }}"
+            class="activity-map"
+            loading="lazy">
+        </iframe>
+    </div>
+</div>
+{% endif %}
+
+<!-- Stats Grid -->
+<div class="dashboard-stats stagger-children">
+    <!-- Pace (for runs) or Speed (for other activities) -->
+    {% if activity.activity_type and activity.activity_type.lower() == 'run' and activity.distance and activity.moving_time %}
+    {% set pace_seconds = activity.moving_time / (activity.distance / 1609.34) %}
+    {% set pace_min = (pace_seconds // 60)|int %}
+    {% set pace_sec = (pace_seconds % 60)|int %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Avg Pace</div>
+        <div class="stat-card__value">
+            {{ pace_min }}:{{ "%02d"|format(pace_sec) }}
+            <span class="stat-card__unit">/mi</span>
+        </div>
+        {% if activity.max_speed %}
+        {% set best_pace_seconds = 1609.34 / activity.max_speed %}
+        {% set best_pace_min = (best_pace_seconds // 60)|int %}
+        {% set best_pace_sec = (best_pace_seconds % 60)|int %}
+        <div class="stat-card__footer">Best: {{ best_pace_min }}:{{ "%02d"|format(best_pace_sec) }}/mi</div>
+        {% endif %}
+    </div>
+    {% elif activity.avg_speed %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Avg Speed</div>
+        <div class="stat-card__value">
+            {{ "{:.1f}".format(activity.avg_speed * 2.237) }}
+            <span class="stat-card__unit">mph</span>
+        </div>
+        {% if activity.max_speed %}
+        <div class="stat-card__footer">Max: {{ "{:.1f}".format(activity.max_speed * 2.237) }} mph</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Heart Rate -->
+    {% if activity.avg_hr %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Avg Heart Rate</div>
+        <div class="stat-card__value">
+            {{ "{:.0f}".format(activity.avg_hr) }}
+            <span class="stat-card__unit">bpm</span>
+        </div>
+        {% if activity.max_hr %}
+        <div class="stat-card__footer">Max: {{ "{:.0f}".format(activity.max_hr) }} bpm</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Calories -->
+    {% if activity.calories %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Calories</div>
+        <div class="stat-card__value">{{ "{:,.0f}".format(activity.calories) }}</div>
+        <div class="stat-card__footer">Total burned</div>
+    </div>
+    {% endif %}
+
+    <!-- Elapsed Time -->
+    {% if activity.elapsed_time and activity.moving_time %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Elapsed Time</div>
+        <div class="stat-card__value">
+            {{ (activity.elapsed_time // 3600)|int }}:{{ "%02d"|format((activity.elapsed_time % 3600) // 60) }}
+        </div>
+        <div class="stat-card__footer">
+            {% set stopped = activity.elapsed_time - activity.moving_time %}
+            {{ (stopped // 60)|int }} min stopped
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Charts Row -->
+<div class="dashboard-charts stagger-children">
+    {% if stream and stream.altitude %}
+    <div class="chart-card animate-slide-up">
+        <div class="chart-card__header">
+            <h3>Elevation Profile</h3>
+            {% if activity.elevation_gain and activity.elevation_loss %}
+            <span class="text-sm text-muted">
+                ↑ {{ "{:,.0f}".format(activity.elevation_gain * 3.281) }}ft
+                ↓ {{ "{:,.0f}".format(activity.elevation_loss * 3.281) }}ft
+            </span>
+            {% endif %}
+        </div>
+        <div class="chart-card__canvas" style="height: 200px;">
+            <canvas id="elevation-chart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stream and stream.heart_rate %}
+    <div class="chart-card animate-slide-up">
+        <div class="chart-card__header">
+            <h3>Heart Rate</h3>
+            {% if activity.avg_hr and activity.max_hr %}
+            <span class="text-sm text-muted">
+                Avg {{ "{:.0f}".format(activity.avg_hr) }} · Max {{ "{:.0f}".format(activity.max_hr) }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="chart-card__canvas" style="height: 200px;">
+            <canvas id="hr-chart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Elevation Details -->
+{% if activity.elevation_high or activity.elevation_low %}
+<div class="chart-card animate-slide-up">
+    <div class="chart-card__header">
+        <h3>Elevation Details</h3>
+    </div>
+    <div class="metric-grid">
+        {% if activity.elevation_high %}
+        <div class="metric-item">
+            <div class="metric-item__value">{{ "{:,.0f}".format(activity.elevation_high * 3.281) }}ft</div>
+            <div class="metric-item__label">Highest Point</div>
+        </div>
+        {% endif %}
+        {% if activity.elevation_low %}
+        <div class="metric-item">
+            <div class="metric-item__value">{{ "{:,.0f}".format(activity.elevation_low * 3.281) }}ft</div>
+            <div class="metric-item__label">Lowest Point</div>
+        </div>
+        {% endif %}
+        {% if activity.elevation_gain %}
+        <div class="metric-item">
+            <div class="metric-item__value metric-item__value--positive">+{{ "{:,.0f}".format(activity.elevation_gain * 3.281) }}ft</div>
+            <div class="metric-item__label">Total Gain</div>
+        </div>
+        {% endif %}
+        {% if activity.elevation_loss %}
+        <div class="metric-item">
+            <div class="metric-item__value metric-item__value--negative">-{{ "{:,.0f}".format(activity.elevation_loss * 3.281) }}ft</div>
+            <div class="metric-item__label">Total Loss</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Training Analysis -->
+{% if metrics %}
+<h2 class="section-title mt-xl">Training Analysis</h2>
+
+<div class="dashboard-stats stagger-children">
+    <!-- TSS -->
+    {% if metrics.tss %}
+    <div class="stat-card stat-card--highlight animate-slide-up">
+        <div class="stat-card__header">Training Stress Score</div>
+        <div class="stat-card__value">{{ "{:.0f}".format(metrics.tss) }}</div>
+        <div class="stat-card__footer">
+            <span class="tss-badge tss-badge--{{ metrics.tss_method }}">{{ metrics.tss_method|upper }}</span>
+            based
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TRIMP -->
+    {% if metrics.trimp %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">TRIMP</div>
+        <div class="stat-card__value">{{ "{:.0f}".format(metrics.trimp) }}</div>
+        <div class="stat-card__footer">Training Impulse</div>
+    </div>
+    {% endif %}
+
+    <!-- Intensity Factor -->
+    {% if metrics.intensity_factor %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Intensity Factor</div>
+        <div class="stat-card__value">{{ "{:.2f}".format(metrics.intensity_factor) }}</div>
+        <div class="stat-card__footer">IF</div>
+    </div>
+    {% endif %}
+
+    <!-- Aerobic/Anaerobic -->
+    {% if metrics.aerobic_time or metrics.anaerobic_time %}
+    <div class="stat-card animate-slide-up">
+        <div class="stat-card__header">Training Type</div>
+        <div class="stat-card__value">
+            {% set total_zone_time = (metrics.aerobic_time or 0) + (metrics.anaerobic_time or 0) %}
+            {% if total_zone_time > 0 %}
+            {{ "{:.0f}".format((metrics.aerobic_time or 0) / total_zone_time * 100) }}%
+            {% else %}–{% endif %}
+        </div>
+        <div class="stat-card__footer">Aerobic</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- HR Zone Distribution -->
+{% if metrics.hr_z1_time or metrics.hr_z2_time or metrics.hr_z3_time or metrics.hr_z4_time or metrics.hr_z5_time %}
+<div class="chart-card animate-slide-up">
+    <div class="chart-card__header">
+        <h3>Heart Rate Zones</h3>
+        {% set total_hr_time = (metrics.hr_z1_time or 0) + (metrics.hr_z2_time or 0) + (metrics.hr_z3_time or 0) + (metrics.hr_z4_time or 0) + (metrics.hr_z5_time or 0) %}
+        {% if total_hr_time > 0 %}
+        <span class="text-sm text-muted">{{ "{:.0f}".format(total_hr_time / 60) }} min tracked</span>
+        {% endif %}
+    </div>
+    <div class="chart-card__canvas" style="height: 200px;">
+        <canvas id="hr-zones-chart"></canvas>
+    </div>
+    <div class="zone-legend">
+        <div class="zone-legend__item">
+            <span class="zone-dot zone-dot--z1"></span>
+            <span class="zone-legend__label">Z1 Recovery</span>
+            <span class="zone-legend__value">{{ "{:.0f}".format((metrics.hr_z1_time or 0) / 60) }}m</span>
+        </div>
+        <div class="zone-legend__item">
+            <span class="zone-dot zone-dot--z2"></span>
+            <span class="zone-legend__label">Z2 Aerobic</span>
+            <span class="zone-legend__value">{{ "{:.0f}".format((metrics.hr_z2_time or 0) / 60) }}m</span>
+        </div>
+        <div class="zone-legend__item">
+            <span class="zone-dot zone-dot--z3"></span>
+            <span class="zone-legend__label">Z3 Tempo</span>
+            <span class="zone-legend__value">{{ "{:.0f}".format((metrics.hr_z3_time or 0) / 60) }}m</span>
+        </div>
+        <div class="zone-legend__item">
+            <span class="zone-dot zone-dot--z4"></span>
+            <span class="zone-legend__label">Z4 Threshold</span>
+            <span class="zone-legend__value">{{ "{:.0f}".format((metrics.hr_z4_time or 0) / 60) }}m</span>
+        </div>
+        <div class="zone-legend__item">
+            <span class="zone-dot zone-dot--z5"></span>
+            <span class="zone-legend__label">Z5 VO2max</span>
+            <span class="zone-legend__value">{{ "{:.0f}".format((metrics.hr_z5_time or 0) / 60) }}m</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% elif activity.avg_hr %}
+<!-- No metrics but has HR data - suggest computing -->
+<div class="chart-card animate-slide-up mt-xl">
+    <div class="chart-card__header">
+        <h3>Training Analysis</h3>
+    </div>
+    <div class="no-data-message">
+        <p>Training metrics not yet computed for this activity.</p>
+        <p class="text-sm">Run <code>python -m scripts.compute_metrics</code> to analyze your activities.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- File Info -->
+{% if fit_file %}
+<details class="mt-lg">
+    <summary>File Information</summary>
+    <div class="chart-card mt-sm">
+        <dl>
+            <dt>File Path</dt>
+            <dd><code>{{ fit_file.fit_path }}</code></dd>
+
+            <dt>File Size</dt>
+            <dd>{{ "{:,.0f}".format(fit_file.file_size / 1024) }} KB</dd>
+
+            <dt>SHA256</dt>
+            <dd><code>{{ fit_file.sha256[:16] }}...</code></dd>
+
+            {% if stream %}
+            <dt>Original Points</dt>
+            <dd>{{ "{:,}".format(stream.original_point_count) }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+</details>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if stream and stream.altitude %}
+<script>
+fetch('/analysis/api/elevation/{{ activity.activity_id }}')
+    .then(r => r.json())
+    .then(data => {
+        const config = ChartConfig.elevationProfile(data.labels, data.data);
+        new Chart(document.getElementById('elevation-chart'), config);
+    });
+</script>
+{% endif %}
+
+{% if stream and stream.heart_rate %}
+<script>
+fetch('/analysis/api/heartrate/{{ activity.activity_id }}')
+    .then(r => r.json())
+    .then(data => {
+        const config = ChartConfig.heartRate(data.labels, data.data);
+        new Chart(document.getElementById('hr-chart'), config);
+    });
+</script>
+{% endif %}
+
+{% if metrics and (metrics.hr_z1_time or metrics.hr_z2_time or metrics.hr_z3_time or metrics.hr_z4_time or metrics.hr_z5_time) %}
+<script>
+// HR Zones horizontal bar chart
+const hrZonesConfig = ChartConfig.hrZones({
+    z1: {{ metrics.hr_z1_time or 0 }},
+    z2: {{ metrics.hr_z2_time or 0 }},
+    z3: {{ metrics.hr_z3_time or 0 }},
+    z4: {{ metrics.hr_z4_time or 0 }},
+    z5: {{ metrics.hr_z5_time or 0 }},
+});
+new Chart(document.getElementById('hr-zones-chart'), hrZonesConfig);
+</script>
+{% endif %}
+{% endblock %}

@@ -289,13 +289,20 @@ def generate_activity_map_html(
     lons = [p[1] for p in stream.route]
     center = (sum(lats) / len(lats), sum(lons) / len(lons))
 
+    # Create map with explicit 100% width/height for iframe embedding
     m = folium.Map(
         location=center,
         zoom_start=13,
         tiles="cartodbpositron",
+        width="100%",
+        height="100%",
     )
 
-    m.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
+    # Fit bounds with pixel padding to ensure entire route is centered and visible
+    m.fit_bounds(
+        [[min(lats), min(lons)], [max(lats), max(lons)]],
+        padding=[50, 50],  # 50px padding on all sides
+    )
 
     color = get_activity_color(activity.activity_type)
 
@@ -320,4 +327,28 @@ def generate_activity_map_html(
         icon=folium.Icon(color="red", icon="stop"),
     ).add_to(m)
 
-    return m._repr_html_()
+    # Get HTML and fix the body/html to fill iframe properly
+    html = m._repr_html_()
+
+    # Inject CSS to ensure map fills the iframe container
+    fix_css = """
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .folium-map {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+        }
+    </style>
+    """
+    html = html.replace("</head>", fix_css + "</head>")
+
+    return html

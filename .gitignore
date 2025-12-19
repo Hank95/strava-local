@@ -1,7 +1,7 @@
 # Personal data - DO NOT COMMIT
-activities/
+/activities/
 activities.csv
-data/
+/data/
 
 # Claude Code settings
 .claude/
