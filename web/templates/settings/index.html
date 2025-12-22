@@ -20,6 +20,49 @@
 </div>
 {% endif %}
 
+{% if request.query_params.get('strava_saved') %}
+<div class="alert alert--success animate-fade-in">
+    Strava API credentials saved.
+</div>
+{% endif %}
+
+{% if request.query_params.get('strava_connected') %}
+<div class="alert alert--success animate-fade-in">
+    Successfully connected to Strava! You can now sync your activities.
+</div>
+{% endif %}
+
+{% if request.query_params.get('strava_synced') %}
+<div class="alert alert--success animate-fade-in">
+    Strava sync complete: {{ request.query_params.get('new') }} new, {{ request.query_params.get('updated') }} updated.
+</div>
+{% endif %}
+
+{% if request.query_params.get('strava_disconnected') %}
+<div class="alert alert--success animate-fade-in">
+    Strava has been disconnected.
+</div>
+{% endif %}
+
+{% if request.query_params.get('strava_error') %}
+<div class="alert alert--error animate-fade-in">
+    {% set error = request.query_params.get('strava_error') %}
+    {% if error == 'no_credentials' %}
+        Please enter your Strava API credentials first.
+    {% elif error == 'no_code' %}
+        Authorization failed - no code received from Strava.
+    {% elif error == 'token_exchange_failed' %}
+        Failed to connect to Strava. Please check your credentials.
+    {% elif error == 'not_connected' %}
+        Please connect to Strava first.
+    {% elif error == 'sync_failed' %}
+        Sync failed. Please try again or reconnect.
+    {% else %}
+        Strava error: {{ error }}
+    {% endif %}
+</div>
+{% endif %}
+
 <form action="/settings/profile" method="post">
     <div class="chart-card animate-slide-up">
         <div class="chart-card__header">
@@ -115,6 +158,98 @@
         </div>
     </div>
 </form>
+
+<div class="chart-card animate-slide-up">
+    <div class="chart-card__header">
+        <h3>Strava API Integration</h3>
+        {% if strava_connected %}
+        <span class="badge badge--success">Connected</span>
+        {% endif %}
+    </div>
+
+    <p class="text-muted mb-lg">
+        Connect to the Strava API to automatically sync new activities. This keeps your local database
+        up-to-date without re-exporting your data.
+    </p>
+
+    {% if not strava_connected %}
+    <div class="strava-setup">
+        <h4 class="font-semibold mb-md">Step 1: Create a Strava API Application</h4>
+        <ol class="text-muted mb-lg">
+            <li>Go to <a href="https://www.strava.com/settings/api" target="_blank" class="text-primary">Strava API Settings</a></li>
+            <li>Create a new application (use any name/website)</li>
+            <li>Set the <strong>Authorization Callback Domain</strong> to: <code>localhost</code></li>
+            <li>Copy your <strong>Client ID</strong> and <strong>Client Secret</strong> below</li>
+        </ol>
+
+        <h4 class="font-semibold mb-md">Step 2: Enter API Credentials</h4>
+        <form action="/settings/strava" method="post">
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label class="form-group__label" for="strava_client_id">Client ID</label>
+                    <input type="text" id="strava_client_id" name="strava_client_id" class="form-group__input"
+                           value="{{ profile.strava_client_id or '' }}"
+                           placeholder="e.g., 12345">
+                </div>
+                <div class="form-group">
+                    <label class="form-group__label" for="strava_client_secret">Client Secret</label>
+                    <input type="password" id="strava_client_secret" name="strava_client_secret" class="form-group__input"
+                           value="{{ profile.strava_client_secret or '' }}"
+                           placeholder="Your secret key">
+                </div>
+            </div>
+            <button type="submit" class="btn btn--secondary">Save Credentials</button>
+        </form>
+
+        {% if profile.strava_client_id and profile.strava_client_secret %}
+        <div class="mt-lg">
+            <h4 class="font-semibold mb-md">Step 3: Authorize with Strava</h4>
+            <p class="text-muted mb-md">Click below to authorize Strava Local to access your activities.</p>
+            <a href="/settings/strava/connect" class="btn btn--primary">
+                Connect to Strava
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="strava-connected">
+        <div class="strava-status mb-lg">
+            <div class="strava-status__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <div class="strava-status__text">
+                <strong>Connected to Strava</strong>
+                {% if profile.strava_athlete_id %}
+                <span class="text-muted"> (Athlete ID: {{ profile.strava_athlete_id }})</span>
+                {% endif %}
+                {% if profile.strava_last_sync %}
+                <br><small class="text-muted">Last sync: {{ profile.strava_last_sync.strftime('%Y-%m-%d %H:%M') }}</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="strava-actions">
+            <form action="/settings/strava/sync" method="post" style="display: inline;">
+                <button type="submit" class="btn btn--primary">
+                    Sync New Activities
+                </button>
+            </form>
+            <form action="/settings/strava/disconnect" method="post" style="display: inline; margin-left: var(--space-sm);">
+                <button type="submit" class="btn btn--secondary btn--danger">
+                    Disconnect
+                </button>
+            </form>
+        </div>
+
+        <p class="text-muted mt-md" style="font-size: var(--font-size-sm);">
+            Syncing fetches activities since your last sync. Only new activities are added; existing ones are updated.
+        </p>
+    </div>
+    {% endif %}
+</div>
 
 <div class="chart-card animate-slide-up">
     <div class="chart-card__header">

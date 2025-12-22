@@ -171,6 +171,15 @@ class AthleteProfile(Base):
     # Format: {"z1_max": 68, "z2_max": 83, "z3_max": 94, "z4_max": 105}
     hr_zone_thresholds = Column(JSON, nullable=True)
 
+    # Strava API integration
+    strava_client_id = Column(String, nullable=True)
+    strava_client_secret = Column(String, nullable=True)
+    strava_access_token = Column(String, nullable=True)
+    strava_refresh_token = Column(String, nullable=True)
+    strava_token_expires_at = Column(Integer, nullable=True)  # Unix timestamp
+    strava_athlete_id = Column(Integer, nullable=True)  # Strava user ID
+    strava_last_sync = Column(DateTime, nullable=True)  # Last successful sync
+
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

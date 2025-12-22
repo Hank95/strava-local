@@ -1050,7 +1050,7 @@ nav.container-fluid a[aria-current="page"] {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-background);
-  height: 400px;
+  height: 450px;
 }
 
 .activity-map {
@@ -1060,6 +1060,12 @@ nav.container-fluid a[aria-current="page"] {
   width: 100%;
   height: 100%;
   border: none;
+}
+
+@media (min-width: 768px) {
+  .map-container {
+    height: 500px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1327,6 +1333,85 @@ nav.container-fluid a[aria-current="page"] {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge--success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge--warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge--danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Strava Integration */
+.strava-setup ol {
+  padding-left: var(--space-lg);
+  line-height: 1.8;
+}
+
+.strava-setup ol li {
+  margin-bottom: var(--space-xs);
+}
+
+.strava-setup code {
+  background: var(--color-background);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.strava-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: #d4edda;
+  border-radius: var(--radius-md);
+}
+
+.strava-status__icon {
+  color: #155724;
+  flex-shrink: 0;
+}
+
+.strava-status__text {
+  color: #155724;
+}
+
+.strava-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.btn--danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn--danger:hover {
+  background: #dc3545;
+  color: white;
 }
 
 /* Danger Zone */

@@ -289,19 +289,11 @@ def generate_activity_map_html(
     lons = [p[1] for p in stream.route]
     center = (sum(lats) / len(lats), sum(lons) / len(lons))
 
-    # Create map with explicit 100% width/height for iframe embedding
+    # Create map centered on route - don't call fitBounds here, let JS handle it
     m = folium.Map(
         location=center,
-        zoom_start=13,
+        zoom_start=14,
         tiles="cartodbpositron",
-        width="100%",
-        height="100%",
-    )
-
-    # Fit bounds with pixel padding to ensure entire route is centered and visible
-    m.fit_bounds(
-        [[min(lats), min(lons)], [max(lats), max(lons)]],
-        padding=[50, 50],  # 50px padding on all sides
     )
 
     color = get_activity_color(activity.activity_type)
@@ -327,28 +319,37 @@ def generate_activity_map_html(
         icon=folium.Icon(color="red", icon="stop"),
     ).add_to(m)
 
-    # Get HTML and fix the body/html to fill iframe properly
+    # Store bounds for JavaScript
+    south, west = min(lats), min(lons)
+    north, east = max(lats), max(lons)
+
+    # Get HTML
     html = m._repr_html_()
 
-    # Inject CSS to ensure map fills the iframe container
-    fix_css = """
-    <style>
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        .folium-map {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-        }
-    </style>
+    # Inject script AFTER the map is created (at end of body)
+    fit_script = f"""
+    <script>
+        (function() {{
+            var bounds = [[{south}, {west}], [{north}, {east}]];
+
+            // Find map - folium creates a variable like map_xxxxx
+            var map = null;
+            for (var key in window) {{
+                if (key.indexOf('map_') === 0 && window[key]._leaflet_id) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+
+            if (map) {{
+                console.log('Found map, fitting bounds');
+                map.fitBounds(bounds, {{padding: [30, 30]}});
+            }} else {{
+                console.log('Map not found');
+            }}
+        }})();
+    </script>
     """
-    html = html.replace("</head>", fix_css + "</head>")
+    html = html.replace("</body>", fit_script + "</body>")
 
     return html
