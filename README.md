@@ -13,6 +13,32 @@ A local ingestion and analysis tool for Strava activity data. Ingest your Strava
 - **Analysis**: Personal records, heart rate statistics
 - **Pace & Speed**: Displays pace (min/mile) for runs, speed (mph) for other activities
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="800">
+  <br>
+  <em>Dashboard with activity stats, breakdown charts, and recent activities</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/heatmap.png" alt="Heatmap" width="800">
+  <br>
+  <em>Interactive heatmap of all your activities</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/fitness.png" alt="Fitness Tracking" width="800">
+  <br>
+  <em>CTL/ATL/TSB fitness and fatigue tracking over time</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/activity.png" alt="Activity Detail" width="800">
+  <br>
+  <em>Detailed activity view with route map and metrics</em>
+</p>
+
 ## Quick Start
 
 ```bash
@@ -72,10 +98,12 @@ This calculates:
 ### Start the Web Dashboard
 
 ```bash
-python -m web.run
+uvicorn web.app:app --reload
 ```
 
 Then open http://localhost:8000 in your browser.
+
+> **Note**: The `--reload` flag enables auto-restart on file changes (useful for development). Omit it for production use.
 
 ## Athlete Settings
 
